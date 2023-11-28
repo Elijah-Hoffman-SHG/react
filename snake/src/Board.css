@@ -1,0 +1,103 @@
+.board{
+    outline: 2px solid lightblue;
+    user-select: none;
+    color: #282c34;
+}
+h4{
+    color: pink;
+}
+.row{
+    color: white;
+    height:35px;
+}
+.cell{
+    border-radius: 30%;
+    color: white;
+    width: 35px;
+    height: 35px;
+    outline: 1px solid lightblue;
+    display: inline-block;
+   
+}
+.cell-green{
+    background-color: rgb(7, 95, 66);
+}
+.cell-red{
+    background-color: pink;
+}
+.cell-purple{
+    background-color: cadetblue;
+    color: white;
+}
+.cell-blue{
+    background-color: rgb(57, 114, 158);
+}
+.cell-orange{
+    background-color: rgb(218, 120, 45);
+}
+.cell-yellow{
+    background-color: rgb(105, 185, 0);
+}
+.boardbox{
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    
+}
+.title-screen{
+    
+        text-align: center;
+        background-color: #282c34;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-size: calc(10px+2vmin);
+        color:white;
+ 
+}
+
+.button-23 {
+ box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  background-color: #282c34;
+  border: 1px solid lightblue;
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: white;
+  cursor: pointer;
+  display: inline-block;
+  font-family: Circular,-apple-system,BlinkMacSystemFont,Roboto,"Helvetica Neue",sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 20px;
+  margin-top: 25px;
+  outline: none;
+  padding: 13px 23px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  touch-action: manipulation;
+  transition: box-shadow .2s,-ms-transform .1s,-webkit-transform .1s,transform .1s;
+  user-select: none;
+  -webkit-user-select: none;
+  width: auto;
+}
+
+.button-23:focus-visible {
+  box-shadow: #222222 0 0 0 2px, rgba(255, 255, 255, 0.8) 0 0 0 4px;
+  transition: box-shadow .2s;
+}
+
+.button-23:active {
+
+  border-color: palegoldenrod;
+  transform: scale(.96);
+}
+
+.button-23:disabled {
+  border-color: #DDDDDD;
+
+  cursor: not-allowed;
+  opacity: 1;
+}
