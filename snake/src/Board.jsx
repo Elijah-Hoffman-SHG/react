@@ -27,8 +27,8 @@ const Direction={
     DOWN:'DOWN',
     LEFT:'LEFT'
 }
-const PROBABILITY_OF_DIRECTION_REVERSAL_FOOD = 0;
-const PROBABILITY_OF_TELPORTATION_FOOD = 1;
+const PROBABILITY_OF_DIRECTION_REVERSAL_FOOD = 0.3;
+const PROBABILITY_OF_TELPORTATION_FOOD = .3;
 const getStartingSnakeLLValue = board => {
     
     const rowSize = board.length;
@@ -60,17 +60,15 @@ const Board = () =>{
     const [snake, setSnake] = useState(
       new SinglyLinkedList(getStartingSnakeLLValue(board)),
     );
-    const [fakesnake, setfakeSnake] = useState(
-        null,
-      );
-    const [fakesnakeCells, setfakeSnakeCells] = useState(
-        new Set(),
-      );
+    const [gamespeed, setGameSpeed] = useState(150)
+   
     const [snakeCells, setSnakeCells] = useState(
       new Set([snake.head.value.cell]),
     );
     const [passedPortal, setPassedPortal]= useState(false);
     const [touchedPortal, setTouchedPortal] = useState(false);
+    const [touchedOnce, setTouchedOnce] = useState(false);
+    const [NextTeleportationCell, setNextTeleportationCell] = useState(null);
     const [nextPortal, setNextPortal] = useState(false);
 
     // Naively set the starting food cell 5 cells away from the starting snake cell.
@@ -117,9 +115,9 @@ useEffect(() => {
     return () => window.removeEventListener('keydown', handleKeydown);
   }, [direction]);
 
- // useInterval(() => {
-   // moveSnake();
- //}, 150);
+  useInterval(() => {
+    moveSnake();
+ }, gamespeed);
 
     
  /* 
@@ -137,9 +135,9 @@ const handleKeydown = e => {
 
 const moveSnake = ()=> {
 
+
 let currentHeadCoords;
-console.log({nextPortal}, {touchedPortal}, {passedPortal})
-console.log({snakeCells})
+setGameSpeed(150 - score*(BOARD_SIZE/5))
 
 currentHeadCoords ={
     row: snake.head.value.row,
@@ -164,6 +162,7 @@ if (isOutOfBounds(nextHeadCoords, board)) {
 
 
 const nextHeadCell = board[nextHeadCoords.row][nextHeadCoords.col];
+
   if (snakeCells.has(nextHeadCell)) {
     
     handleGameOver();
@@ -171,8 +170,8 @@ const nextHeadCell = board[nextHeadCoords.row][nextHeadCoords.col];
   }
   if(teleportationCell != 0){
     if(nextHeadCell ===teleportationCell){
-        setNextPortal(true)
-       
+      setNextPortal(true)
+      setNextTeleportationCell(teleportationCell)
       let RC = getRC(foodCell)
       
       nextHeadCoords = {row: RC.row, col: RC.col}
@@ -182,27 +181,18 @@ const nextHeadCell = board[nextHeadCoords.row][nextHeadCoords.col];
     }
     if(nextHeadCell === foodCell){
       let RC = getRC(teleportationCell)
-        setNextPortal(true)
+      setNextPortal(true)
+      setNextTeleportationCell(foodCell)
+
       nextHeadCoords = {row: RC.row, col: RC.col}
        
   }
     }
 
     if(nextPortal){
-        setTouchedPortal(false)
-        while (temp!=null && temp.next != null){
-            console.log(temp.next.value.cell, teleportationCell)
-            if(temp.next.value.cell ===teleportationCell){
-                setTouchedPortal(true)
-            }
-            temp = temp.next
-        }
-        if(!touchedPortal){
-            setPassedPortal(true)
-            setNextPortal(false)
-        }
-        
-        }
+      handleGoingThroughTeleport(NextTeleportationCell);            
+      }
+      
  
 
 
@@ -236,8 +226,7 @@ if (snake.tail === null) snake.tail = snake.head;
 else{
 const currentHead = snake.head;
 snake.head = newHead;
-if(currentHead.next){
-deletethisshiz = currentHead.next.cell}
+
 
 currentHead.next = newHead;
 
@@ -248,45 +237,37 @@ newSnakeCells.add(nextHeadCell);
 snake.tail = snake.tail.next;
 if (snake.tail === null) snake.tail = snake.head;
 }
-//fake logic
 
-///end
+if(passedPortal){
+  handleFoodConsumption(newSnakeCells);
+  setTouchedPortal(false)
+  setPassedPortal(false)
+  setNextPortal(false)
+    }
 
 
 const foodConsumed = nextHeadCell === foodCell;
 if (foodConsumed) {
     
     
-  growSnake(newSnakeCells);
+ growSnake(newSnakeCells);
+ if (!foodShouldTeleport){
   if (foodShouldReverseDirection) reverseSnake();
- if (foodShouldTeleport){
-   
+  handleFoodConsumption(newSnakeCells);
+ 
+
  }
+ 
     //let snakeLength = snakeCells.size;
    // newSnakeCells = teleportHead(getRC(teleportationCell));
    // addtoSnake(snakeLength)
 //}
-  handleFoodConsumption(newSnakeCells);
-}
-const teleportfoodConsumed = nextHeadCell === teleportationCell || passedPortal;
-if (teleportfoodConsumed) {
-
-    
-  growSnake(newSnakeCells);
  
-  if(touchedPortal){
-    if(passedPortal){
-  handleFoodConsumption(newSnakeCells);
-  setTouchedPortal(false)
-  setPassedPortal(false)
-    }
 }
-
-  //let snakeLength = snakeCells.size;
-  //newSnakeCells = teleportHead(getRC(foodCell));
-  //addtoSnake(snakeLength)
-  //handleTeleportConsumption(snake);
-}
+const teleportfoodConsumed = nextHeadCell === teleportationCell; 
+if (teleportfoodConsumed) {
+  growSnake(newSnakeCells);
+ }
 
 
 setSnakeCells(newSnakeCells);
@@ -328,35 +309,10 @@ reverseLinkedList(snake.tail);
     snake.tail = snakeHead;
 }
 
-const teleportHead = (cell) => {
-    const snakeLength = snakeCells.size;
-   
-    const newHead= new LinkedListNode({
-        
-        row: cell.row,
-        col: cell.col,
-        cell: cell.val,
 
-    })
-    const newSnakeCells = new Set([cell.val]);
-    setSnakeCells(newSnakeCells)
-  
-    snake.head= newHead
-    snake.tail = newHead
-    
-    return newSnakeCells
-   
-}
-const addtoSnake = length => {
-    let newSnakeCells = new Set(snakeCells)
-    for (let i = 0; i < length; i ++){
-        growSnake(newSnakeCells)
-    }
-    setSnakeCells(newSnakeCells)
-}
 
-const handleFoodConsumption = () =>{
-    
+
+const handleFoodConsumption = () =>{ 
 const maxCellVal = BOARD_SIZE*BOARD_SIZE;
 let nextFoodCell;
 while(true){
@@ -364,88 +320,34 @@ while(true){
     if(snakeCells.has(nextFoodCell) || foodCell === nextFoodCell) continue
     break
 }
-
 const nextFoodShouldReverseDirection =
 Math.random() < PROBABILITY_OF_DIRECTION_REVERSAL_FOOD;
-
 const nextFoodShouldTeleport =
 Math.random() < PROBABILITY_OF_TELPORTATION_FOOD;
-
-
-
-
-
 setTeleportationCell(0)
+setFoodShouldReverseDirection(false)
+setFoodShouldTeleport(false)
 if(nextFoodShouldTeleport){
     let secondFoodCell;
     while(true){
         secondFoodCell=randomIntFromInterval(1, maxCellVal);
-        if(snakeCells.has(secondFoodCell) || teleportationCell === secondFoodCell) continue
+        if(snakeCells.has(secondFoodCell) || teleportationCell === secondFoodCell || secondFoodCell === nextFoodCell) continue
         break
     }
     setFoodShouldTeleport(nextFoodShouldTeleport);
     setTeleportationCell(secondFoodCell)
 }
-
+else{
+  setFoodShouldReverseDirection(nextFoodShouldReverseDirection);
+}
 
 
 setFoodCell(nextFoodCell);
 
-setFoodShouldReverseDirection(nextFoodShouldReverseDirection);
+
 
 setScore(score + 1);
 
-}
-const handleTeleportConsumption = (originalsnake) =>{
-    const maxCellVal = BOARD_SIZE*BOARD_SIZE;
-    let nextFoodCell;
-    while(true){
-        nextFoodCell=randomIntFromInterval(1, maxCellVal);
-        if(snakeCells.has(nextFoodCell) || foodCell === nextFoodCell) continue
-        break
-    }
-
-    
-    const nextFoodShouldReverseDirection =
-    Math.random() < PROBABILITY_OF_DIRECTION_REVERSAL_FOOD;
-    
-    const nextFoodShouldTeleport =
-    Math.random() < PROBABILITY_OF_TELPORTATION_FOOD;
-    
-   
-    
-  
-  
-
-   setfakeSnake(originalsnake)
-   animateFakeSnake()
-   //fakesnake.head = fs.head
-   //let fakesnakevalues = new Set(originalSnakeCells)
-   //fakesnake.tail=snake.tail
-   //setfakeSnakeCells(fakesnakevalues)
-   
-  
-   //Teleport the cell for the real one, add the fake one... 
-   setTeleportationCell(0)
-   if(nextFoodShouldTeleport){
-       let secondFoodCell;
-       while(true){
-           secondFoodCell=randomIntFromInterval(1, maxCellVal);
-           if(snakeCells.has(secondFoodCell) || teleportationCell === secondFoodCell) continue
-           break
-       }
-       setFoodShouldTeleport(nextFoodShouldTeleport);
-       setTeleportationCell(secondFoodCell)
-   }
-    setFoodCell(nextFoodCell);
-    setFoodShouldReverseDirection(nextFoodShouldReverseDirection);
-    
-    setScore(score + 1);
-    
-
-
-    
-    
 }
 
 
@@ -460,14 +362,55 @@ const handleGameOver = () => {
     setFoodCell(snakeLLStartingValue.cell + 5);
     setTeleportationCell(0);
     setFoodShouldTeleport(false);
+    setFoodShouldReverseDirection(false);
     setDirection(Direction.RIGHT);
+    setNextTeleportationCell(null);
+    setTouchedPortal(false)
+    setPassedPortal(false)
+    setNextPortal(false)
    
 
 }
 
+const handleGoingThroughTeleport = (cell) =>{
+
+  if(!touchedPortal){
+  let temp = snake.tail
+  while (temp!=null && temp.next != null){
+
+    if(temp.next.value.cell ===cell){
+        //if it ever equals it, dont handle food consumption.
+        setTouchedPortal(true)
+        
+        break;
+
+    }
+    temp = temp.next
+}
+}
+
+if(touchedPortal){
+ //if we touched the portal previously, and no cells from tail to head equal the cell, then we are all goo
+ let temp = snake.tail
+ let tempbool = false
+ while(temp!= null){
+  if(temp.value.cell === cell){
+    
+    //If this is true for whole ll, set the other ting
+    tempbool = true
+  }
+  
+  temp = temp.next
+ }
+ if(!tempbool) {
+  setPassedPortal(true)
+ }
+
+}
+}
 return (
     <>
-    <button onClick = {()=> moveSnake()}>Move snake 1</button>
+
     {gameStatus === "titleScreen" && <TitleScreen setGameStatus={setGameStatus} />}
 
     {gameStatus === "playing" && (
@@ -489,10 +432,10 @@ return (
                                 foodShouldReverseDirection,
                                 foodShouldTeleport,
                                 snakeCells,
-                                fakesnakeCells,
+                                
                             );
                             
-                            return <div key={cellIdx} className={className}>{cellValue}</div>;
+                            return <div key={cellIdx} className={className}></div>;
                         })}
                     </div>
                 ))}
@@ -618,22 +561,24 @@ const getOppositeDirection = direction => {
     foodShouldReverseDirection,
     foodShouldTeleport,
     snakeCells,
-    fakesnakeCells,
+   
   ) => {
     let className = 'cell';
-    if (cellValue === foodCell) {
+  
+    if (cellValue === teleportationCell){
+        className = 'cell cell-blue'
+    }
+   else if (cellValue === foodCell) {
       if (foodShouldReverseDirection) {
         className = 'cell cell-purple';
       }
-      if(foodShouldTeleport){
+      else if (foodShouldTeleport) {
         className = 'cell cell-orange';
       }
+      
        else {
         className = 'cell cell-red';
       }
-    }
-    if (cellValue === teleportationCell){
-        className = 'cell cell-blue'
     }
     else if (snakeCells.has(cellValue)) className = 'cell cell-green';
  
