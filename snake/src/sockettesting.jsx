@@ -13,9 +13,13 @@ function SocketTesting() {
   const sendMessage = () =>{
     socket.emit("send_message",  { message, room });
   };
-  socket.on('updatePlayers', (players) =>{
-    console.log(players)
-  })
+  const snakes ={}
+
+
+
+ 
+
+  
   const joinRoom = () =>{
     if(room !== ""){
     socket.emit("join_room", room);

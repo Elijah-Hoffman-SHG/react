@@ -5,6 +5,9 @@ import { useEffect } from "react";
 
 import {randomIntFromInterval, useInterval, reverseLinkedList} from "../src/lib/utils"
 import BlockDescription from "./Blockdescription";
+import io from 'socket.io-client'
+const socket = io.connect("http://localhost:5174")
+
 
 class LinkedListNode{
     constructor(value){
@@ -21,6 +24,15 @@ class SinglyLinkedList{
 
     }
 }
+class Snake{
+  constructor(list, cells, color){
+    this.list = list;
+    this.cells = cells;
+    this.color = color;
+
+}
+}
+
 const Direction={
     UP:'UP',
     RIGHT:'RIGHT',
@@ -54,16 +66,68 @@ const getStartingSnakeLLValue = board => {
 const BOARD_SIZE = 15;
 
 const Board = () =>{
+  const snakes ={}
+ 
+  let playerSnake;
+  let playerID;
+  let startingList;
+  let startingCell;
+  socket.on('snakeID', (id, callback)=>{
+    //ISSUE is here.. we arent getting anything I guess
+    playerID = id;
+    
+    callback("we got the playerID")
+   
+  })
+  
+  socket.on("updatePlayers", (backendplayers) =>{
+  
+   for(const id in backendplayers){
+    if (playerID === id){
+        playerSnake = backendplayers[id]
+    }
+    const backendPlayer = backendplayers[id]
+
+    if(!snakes[id]){
+     snakes[id] = new Snake(backendPlayer.list, backendPlayer.cells, backendPlayer.color)
+    }
+   }
+   for(const id in snakes){
+
+    if(!backendplayers[id]){
+      delete snakes[id]
+    }
+    
+   }
+
+
+  console.log(snakes)
+  startingCell =snakes[playerID].list.head.value.cell
+  startingList =snakes[playerID].list
+
+  console.log(snakes[playerID].list.head.value.cell)
+  })
+  
+ 
+
     const [gameStatus, setGameStatus] = useState("titleScreen");
     const [score, setScore] = useState(0);
+
+    
+    
     const [board, setBoard] = useState(createBoard(BOARD_SIZE));
+
     const [snake, setSnake] = useState(
-      new SinglyLinkedList(getStartingSnakeLLValue(board)),
+      startingList
     );
+    console.log(startingList)
+    console.log(snake)
+    
     const [gamespeed, setGameSpeed] = useState(150)
-   
+  
+    
     const [snakeCells, setSnakeCells] = useState(
-      new Set([snake.head.value.cell]),
+      new Set([startingCell]),
     );
     const [passedPortal, setPassedPortal]= useState(false);
     const [touchedPortal, setTouchedPortal] = useState(false);
@@ -72,7 +136,7 @@ const Board = () =>{
     const [nextPortal, setNextPortal] = useState(false);
 
     // Naively set the starting food cell 5 cells away from the starting snake cell.
-    const [foodCell, setFoodCell] = useState(snake.head.value.cell + 5);
+    const [foodCell, setFoodCell] = useState(startingCell + 5);
     const [teleportationCell, setTeleportationCell] =useState(0);
     const [direction, setDirection] = useState(Direction.RIGHT) ;
     const [foodShouldReverseDirection, setFoodShouldReverseDirection] = useState(
@@ -115,9 +179,9 @@ useEffect(() => {
     return () => window.removeEventListener('keydown', handleKeydown);
   }, [direction]);
 
-  useInterval(() => {
-    moveSnake();
- }, gamespeed);
+ // useInterval(() => {
+  //  moveSnake();
+ //}, gamespeed);
 
     
  /* 
@@ -137,13 +201,13 @@ const moveSnake = ()=> {
 
 
 let currentHeadCoords;
-setGameSpeed(150 - score*(BOARD_SIZE/5))
+
 
 currentHeadCoords ={
     row: snake.head.value.row,
     col: snake.head.value.col,
 };
-let temp = snake.tail
+
 
 
 
@@ -258,11 +322,6 @@ if (foodConsumed) {
 
  }
  
-    //let snakeLength = snakeCells.size;
-   // newSnakeCells = teleportHead(getRC(teleportationCell));
-   // addtoSnake(snakeLength)
-//}
- 
 }
 const teleportfoodConsumed = nextHeadCell === teleportationCell; 
 if (teleportfoodConsumed) {
@@ -271,6 +330,7 @@ if (teleportfoodConsumed) {
 
 
 setSnakeCells(newSnakeCells);
+
 };
 
 
@@ -303,7 +363,7 @@ const reverseSnake = () => {
     const tailNextNodeDirection = getNextNodeDirection(snake.tail, direction);
     const newDirection = getOppositeDirection(tailNextNodeDirection);
     setDirection(newDirection);
-reverseLinkedList(snake.tail);
+    reverseLinkedList(snake.tail);
     const snakeHead = snake.head;
     snake.head = snake.tail;
     snake.tail = snakeHead;
@@ -373,7 +433,6 @@ const handleGameOver = () => {
 }
 
 const handleGoingThroughTeleport = (cell) =>{
-
   if(!touchedPortal){
   let temp = snake.tail
   while (temp!=null && temp.next != null){
@@ -415,7 +474,7 @@ return (
 
     {gameStatus === "playing" && (
     <>
-        
+      <button onClick={ ()=> moveSnake()}>mve</button>
       <h1>Score: {score}</h1>
       <div className = 'boardbox'>
       <BlockDescription/>
