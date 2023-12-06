@@ -104,7 +104,14 @@ const Board = () =>{
    
   })
   const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000);
   
+    // Cleanup function to clear the timeout if the component unmounts before the 5 seconds are up
+    return () => clearTimeout(timer);
+  }, []); // Empty dependency array so this effect runs once on mount
   socket.on('updatePlayers', (backendplayers, totalSnakeCells) => {
     
     let newSnakeCells = new Set(snakeCells)

@@ -172,12 +172,13 @@ io.on("connection", (socket) =>{
 
 //broadcasting sends to everybody, while we just want to send to a room so nah
     //gets the send message event, sends out the receive message
-    setInterval(() => {
-          moveSnakes();
-          io.emit('updateGameState', {snakes: snakes, totalSnakeCells: Array.from(SnakeCells), foodCell: foodCell});
-      }, 1000);
+  
 })
 
+setInterval(() => {
+    moveSnakes();
+    io.emit('updateGameState', {snakes: snakes, totalSnakeCells: Array.from(SnakeCells), foodCell: foodCell});
+}, 1000);
 
 
 server.listen(5174, () =>{
