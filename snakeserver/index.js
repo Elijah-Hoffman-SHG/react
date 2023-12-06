@@ -184,184 +184,125 @@ server.listen(5174, () =>{
     console.log("SERVER IS RUNNING")
 })
 
-const moveSnakes = ()=> {
-    let currentHeadCoords;
+const moveSnakes = () => {
     Object.entries(snakes).forEach(([socketId, snake]) => {
-      
-      currentHeadCoords ={
+      const currentHeadCoords = {
         row: snake.list.head.value.row,
         col: snake.list.head.value.col,
-    };
-    
-    
-    
-    
-    
-    //console.log(currentHeadCoords)
-    
-    let nextHeadCoords = getCoordsInDirection(currentHeadCoords, snake.direction);
-    
-    
-    if (isOutOfBounds(nextHeadCoords, board)) {
-       
-        
+      };
+  
+      let nextHeadCoords = getCoordsInDirection(currentHeadCoords, snake.direction);
+  
+      if (isOutOfBounds(nextHeadCoords, board)) {
         handleSnakeDeath(socketId);
         return;
       }
-    
-      
+  
       const nextHeadCell = board[nextHeadCoords.row][nextHeadCoords.col];
-           
+  
       if (SnakeCells.has(nextHeadCell)) {
-        
         handleSnakeDeath(socketId);
         return;
       }
 
-      /*
-      if(teleportationCell != 0){
-        if(nextHeadCell ===teleportationCell){
-          setNextPortal(true)
-          setNextTeleportationCell(teleportationCell)
-          let RC = getRC(foodCell)
-          
-          nextHeadCoords = {row: RC.row, col: RC.col}
-            
-          
-      
-        }
-        if(nextHeadCell === foodCell){
-          let RC = getRC(teleportationCell)
-          setNextPortal(true)
-          setNextTeleportationCell(foodCell)
-    
-          nextHeadCoords = {row: RC.row, col: RC.col}
-           
-      }
-        }
-    
-        if(nextPortal){
-          handleGoingThroughTeleport(NextTeleportationCell);            
-          }
-          
-          */
-     
-    
-    
-    
-    
-    const newHead = new LinkedListNode(
-        {
-            row: nextHeadCoords.row,
-            col: nextHeadCoords.col,
-            cell: nextHeadCell,
-        }
-    );
-    
-    let newSnakeCells = new Set(snake.cells);
-    let newTotalSnakeCells = new Set(SnakeCells);
-    if(teleportationCell == 0){
-    const currentHead = snake.list.head;
-    
-    
-    snake.list.head = newHead;
-    currentHead.next = newHead;
-    
-    
-    newSnakeCells.delete(snake.list.tail.value.cell);
-    newSnakeCells.add(nextHeadCell);
-    
-    newTotalSnakeCells.delete(snake.list.tail.value.cell);
-    newTotalSnakeCells.add(nextHeadCell);
-    
-    snake.list.tail = snake.list.tail.next;
-    if (snake.list.tail === null) snake.list.tail = snake.list.head;
-    }
-    
-    else{
-    const currentHead = snake.list.head;
-    snake.list.head = newHead;
-    
-    
-    currentHead.next = newHead;
-    
-    
-    newSnakeCells.delete(snake.list.tail.value.cell);
-    newSnakeCells.add(nextHeadCell);
-    
-    newTotalSnakeCells.delete(snake.list.tail.value.cell);
-    newTotalSnakeCells.add(nextHeadCell);
-    
-    
-    snake.list.tail = snake.list.tail.next;
-    if (snake.list.tail === null) snake.list.tail = snake.list.head;
-    }
+      // Preserved commented-out code
     /*
-    
-    if(passedPortal){
-      handleFoodConsumption(newSnakeCells);
-      setTouchedPortal(false)
-      setPassedPortal(false)
-      setNextPortal(false)
-        }
-    
-    */
-    
-    const foodConsumed = nextHeadCell === foodCell;
-    if (foodConsumed) {
+    if(teleportationCell != 0){
+      if(nextHeadCell ===teleportationCell){
+        setNextPortal(true)
+        setNextTeleportationCell(teleportationCell)
+        let RC = getRC(foodCell)
         
-        
-     growSnake(newSnakeCells, snake);
-     if (!foodShouldTeleport){
-      if (foodShouldReverseDirection) reverseSnake();
-      handleFoodConsumption(newSnakeCells);
-     
-    
-     }
-     
-    }
-    const teleportfoodConsumed = nextHeadCell === teleportationCell; 
-    if (teleportfoodConsumed) {
-      growSnake(newSnakeCells, snake);
-     }
-    
-    
-    SnakeCells = newTotalSnakeCells;
-    snake.cells = newSnakeCells;
-    snakes[socketId].cells = new Set([newSnakeCells]);
-    snakes[socketId].list = snake.list;
-    
+        nextHeadCoords = {row: RC.row, col: RC.col}
+      }
+      if(nextHeadCell === foodCell){
+        let RC = getRC(teleportationCell)
+        setNextPortal(true)
+        setNextTeleportationCell(foodCell)
   
-    })
-    
-    };
-    
-    
-    const growSnake = (newSnakeCells, snake) => {
-        const growthNodeCoords = getGrowthNodeCoords(snake.list.tail, snake.direction);
-       
-        if (isOutOfBounds(growthNodeCoords, board)) {
-          // Snake is positioned such that it can't grodw; dosn't do anything.
-          return;
-        }
-        const newTailCell = board[growthNodeCoords.row][growthNodeCoords.col]
-        const newTail = new LinkedListNode({
-            
-            row: growthNodeCoords.row,
-            col: growthNodeCoords.col,
-            cell: newTailCell,
-    
-        })
-        const currentTail = snake.list.tail
-      
-        snake.list.tail = newTail
-        snake.list.tail.next = currentTail
-        newSnakeCells.add(newTailCell)
-    
-    
-    
+        nextHeadCoords = {row: RC.row, col: RC.col}
+      }
     }
-    
+
+    if(nextPortal){
+      handleGoingThroughTeleport(NextTeleportationCell);            
+    }
+    */
+
+  
+      const newHead = new LinkedListNode({
+        row: nextHeadCoords.row,
+        col: nextHeadCoords.col,
+        cell: nextHeadCell,
+      });
+  
+      let newSnakeCells = new Set(snake.cells);
+      let newTotalSnakeCells = new Set(SnakeCells);
+  
+      const currentHead = snake.list.head;
+      snake.list.head = newHead;
+      currentHead.next = newHead;
+  
+      newSnakeCells.delete(snake.list.tail.value.cell);
+      newSnakeCells.add(nextHeadCell);
+  
+      newTotalSnakeCells.delete(snake.list.tail.value.cell);
+      newTotalSnakeCells.add(nextHeadCell);
+  
+      snake.list.tail = snake.list.tail.next;
+      if (snake.list.tail === null) snake.list.tail = snake.list.head;
+      
+            /*
+
+        if(passedPortal){
+        handleFoodConsumption(newSnakeCells);
+        setTouchedPortal(false)
+        setPassedPortal(false)
+        setNextPortal(false)
+            }
+
+        */
+
+      const foodConsumed = nextHeadCell === foodCell;
+      if (foodConsumed) {
+        growSnake(newSnakeCells, snake);
+        if (!foodShouldTeleport) {
+          if (foodShouldReverseDirection) reverseSnake();
+          handleFoodConsumption(newSnakeCells);
+        }
+      }
+  
+      const teleportfoodConsumed = nextHeadCell === teleportationCell;
+      if (teleportfoodConsumed) {
+        growSnake(newSnakeCells, snake);
+      }
+  
+      SnakeCells = newTotalSnakeCells;
+      snake.cells = newSnakeCells;
+      snakes[socketId].cells = new Set([newSnakeCells]);
+      snakes[socketId].list = snake.list;
+    });
+  };
+  
+  const growSnake = (newSnakeCells, snake) => {
+    const growthNodeCoords = getGrowthNodeCoords(snake.list.tail, snake.direction);
+  
+    if (isOutOfBounds(growthNodeCoords, board)) {
+      return;
+    }
+  
+    const newTailCell = board[growthNodeCoords.row][growthNodeCoords.col];
+    const newTail = new LinkedListNode({
+      row: growthNodeCoords.row,
+      col: growthNodeCoords.col,
+      cell: newTailCell,
+    });
+  
+    const currentTail = snake.list.tail;
+    snake.list.tail = newTail;
+    snake.list.tail.next = currentTail;
+    newSnakeCells.add(newTailCell);
+  };
     const reverseSnake = () => {
         const tailNextNodeDirection = getNextNodeDirection(snake.tail, direction);
         const newDirection = getOppositeDirection(tailNextNodeDirection);
