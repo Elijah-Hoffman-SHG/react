@@ -25,10 +25,11 @@ class SinglyLinkedList{
     }
 }
 class Snake{
-  constructor(list, cells, color){
+  constructor(list, cells, color, direction){
     this.list = list;
     this.cells = new Set(cells);
     this.color = color;
+    this.direction = direction;
 
 }
 }
@@ -71,7 +72,7 @@ const Board = () =>{
   const [board, setBoard] = useState(createBoard(BOARD_SIZE));
 
   const [gamespeed, setGameSpeed] = useState(150)
-  const [direction, setDirection] = useState(Direction.RIGHT) ;
+  const [direction, setDirection] = useState() ;
 
   // Initialize state with default values
   const [snakes, setSnakes] = useState([]);
@@ -103,49 +104,54 @@ const Board = () =>{
    
   })
   const [isLoading, setIsLoading] = useState(true);
-
-  socket.on("updatePlayers", (backendplayers) => {
-    console.log('Received players from backend:', backendplayers);
+  
+  socket.on('updatePlayers', (backendplayers, totalSnakeCells) => {
     
     let newSnakeCells = new Set(snakeCells)
+    totalSnakeCells.forEach((cell)=>{newSnakeCells.add(cell)})
 
     for(const id in backendplayers){
       const backendPlayer = backendplayers[id]
-      console.log(backendPlayer)
+
       if(!snakes[id]){
         
         // Create a new Snake if it doesn't exist yet
-        snakes[id] = new Snake(backendPlayer.list, backendPlayer.cells, backendPlayer.color)
-        //Add the cells of each snake to the list
-        console.log('Created new snake:', snakes[id]);
+        snakes[id] = new Snake(backendPlayer.list, backendPlayer.cells, backendPlayer.color, backendPlayer.direction)
+        
+    
 
       }
-     
     }
   
     for(const id in snakes){
       if(!backendplayers[id]){
         // Delete the Snake if it doesn't exist in the backendplayers
         delete snakes[id]
-        console.log('Deleted snake:', id);
+
       }
 
     }
     
-    
-    console.log('Updated snakes:', snakes);
+
   
     // Make sure the playerSnake is updated correctly
-    playerSnake = snakes[playerID];
-    console.log('Updated playerSnake:', playerSnake);
+    
+    //console.log('Updated playerSnake:', playerSnake);
   
     // Make sure the startingCell and startingList are updated correctly
-    startingCell = playerSnake.list.head.value.cell;
-    startingList = playerSnake.list;
-    console.log('Updated startingCell and startingList:', startingCell, startingList);
+    //startingCell = playerSnake.list.head.value.cell;
+  // startingList = playerSnake.list;
+    //console.log('Updated startingCell and startingList:', startingCell, startingList);
     setIsLoading(false);
+  
+  
   });
-
+  socket.on('updateGameState', (data) => {
+    setSnakes(data.snakes);
+    setSnakeCells(new Set(data.totalSnakeCells));
+    setFoodCell(data.foodCell);  
+    //renderGame(); // Render the game with the new state
+  });
    
   
     
@@ -168,28 +174,37 @@ useEffect(()=>{
         moveSnake();
       }, 150);
 */
+
+/*
 useEffect(() => {
   if (startingList) {
     
     setSnakes(startingList);
+    
   }
   if (startingCell) {
-    setSnakeCells(new Set([startingCell]));
+    
     setFoodCell(startingCell + 5);
   }
-}, [startingList, startingCell]);
-useEffect(() => {
-    const handleKeydown = (e) => {
-      const newDirection = getDirectionFromKey(e.key);
-      const OppositeDirection = getOppositeDirection(newDirection)
-      if (newDirection && OppositeDirection != direction) {
-        setDirection(newDirection);
-      }
-    };
+
   
-    window.addEventListener('keydown', handleKeydown);
-    return () => window.removeEventListener('keydown', handleKeydown);
-  }, [direction]);
+}, [startingList, startingCell]);
+
+*/
+useEffect(() => {
+  const handleKeydown = (e) => {
+    const newDirection = getDirectionFromKey(e.key);
+    const OppositeDirection = getOppositeDirection(newDirection)
+  
+    if (newDirection && OppositeDirection != direction) {
+      // Send the new direction to the server
+      socket.emit('changeDirection', { id: playerID, direction: newDirection });
+    }
+  };
+
+  window.addEventListener('keydown', handleKeydown);
+  return () => window.removeEventListener('keydown', handleKeydown);
+}, [direction, playerID]);
 
  // useInterval(() => {
   //  moveSnake();
@@ -219,21 +234,21 @@ const moveSnake = ()=> {
 let currentHeadCoords;
 console.log(snakes)
 
-snakes.forEach((snake, index)=>{
+Object.entries(snakes).forEach(([socketId, snake]) => {
+  
   currentHeadCoords ={
-    row: snake.head.value.row,
-    col: snake.head.value.col,
+    row: snake.list.head.value.row,
+    col: snake.list.head.value.col,
 };
-console.log(snake)
-console.log("s")
+
 
 
 
 
 //console.log(currentHeadCoords)
 
-let nextHeadCoords = getCoordsInDirection(currentHeadCoords, direction);
-
+let nextHeadCoords = getCoordsInDirection(currentHeadCoords, snake.direction);
+console.log(nextHeadCoords)
 
 if (isOutOfBounds(nextHeadCoords, board)) {
     handleGameOver();
@@ -245,7 +260,7 @@ if (isOutOfBounds(nextHeadCoords, board)) {
 
 const nextHeadCell = board[nextHeadCoords.row][nextHeadCoords.col];
 
-  if (snakeCells[index].has(nextHeadCell)) {
+  if (snakeCells.has(nextHeadCell)) {
     
     handleGameOver();
     return;
@@ -288,36 +303,43 @@ const newHead = new LinkedListNode(
     }
 );
 
-let newSnakeCells = new Set(snakeCells);
-
+let newSnakeCells = new Set(snake.cells);
+let newTotalSnakeCells = new Set(snakeCells);
 if(teleportationCell == 0){
-const currentHead = snake.head;
+const currentHead = snake.list.head;
 
 
-snake.head = newHead;
+snake.list.head = newHead;
 currentHead.next = newHead;
 
 
-newSnakeCells.delete(snake.tail.value.cell);
+newSnakeCells.delete(snake.list.tail.value.cell);
 newSnakeCells.add(nextHeadCell);
 
-snake.tail = snake.tail.next;
-if (snake.tail === null) snake.tail = snake.head;
+newTotalSnakeCells.delete(snake.list.tail.value.cell);
+newTotalSnakeCells.add(nextHeadCell);
+
+snake.list.tail = snake.list.tail.next;
+if (snake.list.tail === null) snake.list.tail = snake.list.head;
 }
 
 else{
-const currentHead = snake.head;
-snake.head = newHead;
+const currentHead = snake.list.head;
+snake.list.head = newHead;
 
 
 currentHead.next = newHead;
 
 
-newSnakeCells.delete(snake.tail.value.cell);
+newSnakeCells.delete(snake.list.tail.value.cell);
 newSnakeCells.add(nextHeadCell);
 
-snake.tail = snake.tail.next;
-if (snake.tail === null) snake.tail = snake.head;
+newTotalSnakeCells.delete(snake.list.tail.value.cell);
+newTotalSnakeCells.add(nextHeadCell);
+
+
+snake.list.tail = snake.list.tail.next;
+if (snake.list.tail === null) snake.list.tail = snake.list.head;
 }
 
 if(passedPortal){
@@ -332,7 +354,7 @@ const foodConsumed = nextHeadCell === foodCell;
 if (foodConsumed) {
     
     
- growSnake(newSnakeCells);
+ growSnake(newSnakeCells, snake);
  if (!foodShouldTeleport){
   if (foodShouldReverseDirection) reverseSnake();
   handleFoodConsumption(newSnakeCells);
@@ -343,17 +365,26 @@ if (foodConsumed) {
 }
 const teleportfoodConsumed = nextHeadCell === teleportationCell; 
 if (teleportfoodConsumed) {
-  growSnake(newSnakeCells);
+  growSnake(newSnakeCells, snake);
  }
 
 
-setSnakeCells(newSnakeCells);
+setSnakeCells(newTotalSnakeCells);
+snake.cells = newSnakeCells;
+
+console.log(newSnakeCells)
+socket.emit('updateSnake', { id: socketId, snake: { 
+  ...snake, 
+  cells: Array.from(snake.cells) 
+},
+tSnakeCells: Array.from(newTotalSnakeCells) });
 })
+
 };
 
 
-const growSnake = newSnakeCells => {
-    const growthNodeCoords = getGrowthNodeCoords(snake.tail, direction);
+const growSnake = (newSnakeCells, snake) => {
+    const growthNodeCoords = getGrowthNodeCoords(snake.list.tail, snake.direction);
    
     if (isOutOfBounds(growthNodeCoords, board)) {
       // Snake is positioned such that it can't grodw; dosn't do anything.
@@ -367,10 +398,10 @@ const growSnake = newSnakeCells => {
         cell: newTailCell,
 
     })
-    const currentTail = snake.tail
+    const currentTail = snake.list.tail
   
-    snake.tail = newTail
-    snake.tail.next = currentTail
+    snake.list.tail = newTail
+    snake.list.tail.next = currentTail
     newSnakeCells.add(newTailCell)
 
 
@@ -433,15 +464,15 @@ setScore(score + 1);
 
 const handleGameOver = () => {
     setScore(0);
-    const snakeLLStartingValue = getStartingSnakeLLValue(board);    
+    //const snakeLLStartingValue = getStartingSnakeLLValue(board);    
     //setSnakes(new SinglyLinkedList(snakeLLStartingValue))
-    setSnakeCells(new Set([snakeLLStartingValue.cell])),
+    //setSnakeCells(new Set([snakeLLStartingValue.cell])),
     
     setFoodCell(snakeLLStartingValue.cell + 5);
     setTeleportationCell(0);
     setFoodShouldTeleport(false);
     setFoodShouldReverseDirection(false);
-    setDirection(Direction.RIGHT);
+    //setDirection(Direction.RIGHT);
     setNextTeleportationCell(null);
     setTouchedPortal(false)
     setPassedPortal(false)
