@@ -27,7 +27,7 @@ class SinglyLinkedList{
 class Snake{
   constructor(list, cells, color){
     this.list = list;
-    this.cells = cells;
+    this.cells = new Set(cells);
     this.color = color;
 
 }
@@ -66,7 +66,30 @@ const getStartingSnakeLLValue = board => {
 const BOARD_SIZE = 15;
 
 const Board = () =>{
-  const snakes ={}
+  const [gameStatus, setGameStatus] = useState("titleScreen");
+  const [score, setScore] = useState(0);
+  const [board, setBoard] = useState(createBoard(BOARD_SIZE));
+
+  const [gamespeed, setGameSpeed] = useState(150)
+  const [direction, setDirection] = useState(Direction.RIGHT) ;
+
+  // Initialize state with default values
+  const [snakes, setSnakes] = useState([]);
+  const [snakeCells, setSnakeCells] = useState(new Set([]));
+  const [foodCell, setFoodCell] = useState(null);
+  const [teleportationCell, setTeleportationCell] =useState(0);
+
+  const [passedPortal, setPassedPortal]= useState(false);
+  const [touchedPortal, setTouchedPortal] = useState(false);
+  const [NextTeleportationCell, setNextTeleportationCell] = useState(null);
+  const [nextPortal, setNextPortal] = useState(false);
+
+
+ 
+  const [foodShouldReverseDirection, setFoodShouldReverseDirection] = useState(false);
+  const [foodShouldTeleport, setFoodShouldTeleport] = useState(false);
+
+  
  
   let playerSnake;
   let playerID;
@@ -79,73 +102,58 @@ const Board = () =>{
     callback("we got the playerID")
    
   })
-  
-  socket.on("updatePlayers", (backendplayers) =>{
-  
-   for(const id in backendplayers){
-    if (playerID === id){
-        playerSnake = backendplayers[id]
-    }
-    const backendPlayer = backendplayers[id]
+  const [isLoading, setIsLoading] = useState(true);
 
-    if(!snakes[id]){
-     snakes[id] = new Snake(backendPlayer.list, backendPlayer.cells, backendPlayer.color)
-    }
-   }
-   for(const id in snakes){
+  socket.on("updatePlayers", (backendplayers) => {
+    console.log('Received players from backend:', backendplayers);
+    
+    let newSnakeCells = new Set(snakeCells)
 
-    if(!backendplayers[id]){
-      delete snakes[id]
+    for(const id in backendplayers){
+      const backendPlayer = backendplayers[id]
+      console.log(backendPlayer)
+      if(!snakes[id]){
+        
+        // Create a new Snake if it doesn't exist yet
+        snakes[id] = new Snake(backendPlayer.list, backendPlayer.cells, backendPlayer.color)
+        //Add the cells of each snake to the list
+        console.log('Created new snake:', snakes[id]);
+
+      }
+     
+    }
+  
+    for(const id in snakes){
+      if(!backendplayers[id]){
+        // Delete the Snake if it doesn't exist in the backendplayers
+        delete snakes[id]
+        console.log('Deleted snake:', id);
+      }
+
     }
     
-   }
+    
+    console.log('Updated snakes:', snakes);
+  
+    // Make sure the playerSnake is updated correctly
+    playerSnake = snakes[playerID];
+    console.log('Updated playerSnake:', playerSnake);
+  
+    // Make sure the startingCell and startingList are updated correctly
+    startingCell = playerSnake.list.head.value.cell;
+    startingList = playerSnake.list;
+    console.log('Updated startingCell and startingList:', startingCell, startingList);
+    setIsLoading(false);
+  });
 
-
-  console.log(snakes)
-  startingCell =snakes[playerID].list.head.value.cell
-  startingList =snakes[playerID].list
-
-  console.log(snakes[playerID].list.head.value.cell)
-  })
+   
+  
+    
+ 
   
  
 
-    const [gameStatus, setGameStatus] = useState("titleScreen");
-    const [score, setScore] = useState(0);
-
-    
-    
-    const [board, setBoard] = useState(createBoard(BOARD_SIZE));
-
-    const [snake, setSnake] = useState(
-      startingList
-    );
-    console.log(startingList)
-    console.log(snake)
-    
-    const [gamespeed, setGameSpeed] = useState(150)
-  
-    
-    const [snakeCells, setSnakeCells] = useState(
-      new Set([startingCell]),
-    );
-    const [passedPortal, setPassedPortal]= useState(false);
-    const [touchedPortal, setTouchedPortal] = useState(false);
-    const [touchedOnce, setTouchedOnce] = useState(false);
-    const [NextTeleportationCell, setNextTeleportationCell] = useState(null);
-    const [nextPortal, setNextPortal] = useState(false);
-
-    // Naively set the starting food cell 5 cells away from the starting snake cell.
-    const [foodCell, setFoodCell] = useState(startingCell + 5);
-    const [teleportationCell, setTeleportationCell] =useState(0);
-    const [direction, setDirection] = useState(Direction.RIGHT) ;
-    const [foodShouldReverseDirection, setFoodShouldReverseDirection] = useState(
-      false,
-    );
-    const [foodShouldTeleport, setFoodShouldTeleport] = useState(
-        false,
-      );
-
+   
 
 
 /*
@@ -161,11 +169,15 @@ useEffect(()=>{
       }, 150);
 */
 useEffect(() => {
-    // Check the score and update the game status
-    if (score >= 90) {
-        setGameStatus("megan");
-    }
-}, [score]);
+  if (startingList) {
+    
+    setSnakes(startingList);
+  }
+  if (startingCell) {
+    setSnakeCells(new Set([startingCell]));
+    setFoodCell(startingCell + 5);
+  }
+}, [startingList, startingCell]);
 useEffect(() => {
     const handleKeydown = (e) => {
       const newDirection = getDirectionFromKey(e.key);
@@ -182,7 +194,11 @@ useEffect(() => {
  // useInterval(() => {
   //  moveSnake();
  //}, gamespeed);
-
+ if(isLoading){
+  return<div>Loading...</div>
+}
+else{
+ 
     
  /* 
 const handleKeydown = e => {
@@ -201,13 +217,15 @@ const moveSnake = ()=> {
 
 
 let currentHeadCoords;
+console.log(snakes)
 
-
-currentHeadCoords ={
+snakes.forEach((snake, index)=>{
+  currentHeadCoords ={
     row: snake.head.value.row,
     col: snake.head.value.col,
 };
-
+console.log(snake)
+console.log("s")
 
 
 
@@ -227,7 +245,7 @@ if (isOutOfBounds(nextHeadCoords, board)) {
 
 const nextHeadCell = board[nextHeadCoords.row][nextHeadCoords.col];
 
-  if (snakeCells.has(nextHeadCell)) {
+  if (snakeCells[index].has(nextHeadCell)) {
     
     handleGameOver();
     return;
@@ -330,7 +348,7 @@ if (teleportfoodConsumed) {
 
 
 setSnakeCells(newSnakeCells);
-
+})
 };
 
 
@@ -416,7 +434,7 @@ setScore(score + 1);
 const handleGameOver = () => {
     setScore(0);
     const snakeLLStartingValue = getStartingSnakeLLValue(board);    
-    setSnake(new SinglyLinkedList(snakeLLStartingValue))
+    //setSnakes(new SinglyLinkedList(snakeLLStartingValue))
     setSnakeCells(new Set([snakeLLStartingValue.cell])),
     
     setFoodCell(snakeLLStartingValue.cell + 5);
@@ -509,7 +527,7 @@ return (
   );
 
         }
-
+      }
 
 const createBoard = BOARD_SIZE =>{
     let counter =1;
