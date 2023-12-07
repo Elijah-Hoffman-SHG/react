@@ -1,185 +1,170 @@
 const express = require('express');
-const app = express();
 const http = require("http");
-const {Server} = require('socket.io');
+const { Server } = require('socket.io');
 const cors = require("cors");
-let gameStatus = "titleScreen";
-let score = 0;
 
-
-let gameSpeed = 150;
-let direction;
-
-// Initialize state with default values
-const PROBABILITY_OF_DIRECTION_REVERSAL_FOOD = 0;
-const PROBABILITY_OF_TELPORTATION_FOOD = 0;
-
-
-
-
-let SnakeCells = new Set([]);
-let foodCell = 23;
-let teleportationCell = 0;
-
-let passedPortal = false;
-let touchedPortal = false;
-let NextTeleportationCell = null;
-let nextPortal = false;
-
-let foodShouldReverseDirection = false;
-let foodShouldTeleport = false;
-const Direction={
-    UP:'UP',
-    RIGHT:'RIGHT',
-    DOWN:'DOWN',
-    LEFT:'LEFT'
+// Define classes
+class LinkedListNode {
+  constructor(value) {
+    this.value = value;
+    this.next = null;
+  }
 }
 
-const createBoard = BOARD_SIZE =>{
-    let counter =1;
-    const board = [];
-    for(let row = 0; row < BOARD_SIZE; row++){
-        const currentRow = []
-        for (let col = 0; col < BOARD_SIZE; col++){
-            currentRow.push(counter++);
-        }
-        board.push(currentRow);
-    }
-    return board;
+class SinglyLinkedList {
+  constructor(value) {
+    const node = new LinkedListNode(value);
+    this.head = node;
+    this.tail = node;
+  }
 }
 
-app.use(cors());
-const getStartingSnakeLLValue = board => {
-    
-    const rowSize = board.length;
-    const colSize = board[0].length;
-    const startingRow = Math.round(rowSize / 3);
-    const startingCol = Math.round(colSize / 3);
-    const startingCell = board[startingRow][startingCol];
-    
-    return {
-      row: startingRow,
-      col: startingCol,
-      cell: startingCell,
-      
-    };
-  };
-  class LinkedListNode{
-    constructor(value){
-        this.value = value;
-        this.next = null;
-    }
-}
-
-class SinglyLinkedList{
-    constructor(value){
-        const node = new LinkedListNode(value);
-        this.head = node;
-        this.tail = node;
-
-    }
-}
-class Snake{
-  constructor(list, cells, color, direction){
+class Snake {
+  constructor(list, cells, color, direction) {
     this.list = list;
     this.cells = cells;
     this.color = color;
     this.direction = direction;
+  }
+}
 
+// Initialize constants
+const Direction = {
+  UP: 'UP',
+  RIGHT: 'RIGHT',
+  DOWN: 'DOWN',
+  LEFT: 'LEFT'
 }
-}
+const BOARD_SIZE = 15;
+const PROBABILITY_OF_DIRECTION_REVERSAL_FOOD = 0;
+const PROBABILITY_OF_TELPORTATION_FOOD = 0;
+
+// Initialize variables
+let gameStatus = "titleScreen";
+let score = 0;
+let gameSpeed = 150;
+let direction;
+let SnakeCells = new Set([]);
+let foodCell = 23;
+let teleportationCell = 0;
+let passedPortal = false;
+let touchedPortal = false;
+let NextTeleportationCell = null;
+let nextPortal = false;
+let foodShouldReverseDirection = false;
+let foodShouldTeleport = false;
+let totalSnakeCells = new Set();
+let snakes = {};
+
+// Create express app and server
+const app = express();
+app.use(cors());
 const server = http.createServer(app)
 
-//variable for sockeIO
+// Initialize socket.io
 const io = new Server(server, {
-    cors:{
-        origin: "http://localhost:5173",
-        methods: ["GET", "POST"],
-        
-
-    },
-    pingInterval: 2000,
-    pingTimeout: 5000
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+  },
+  pingInterval: 2000,
+  pingTimeout: 5000
 });
-const snakes = {
-   
+
+// Define helper functions
+const createBoard = BOARD_SIZE => {
+  let counter = 1;
+  const board = [];
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    const currentRow = []
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      currentRow.push(counter++);
+    }
+    board.push(currentRow);
+  }
+  return board;
 }
-let totalSnakeCells = new Set();
-const BOARD_SIZE = 15;
+
+const getStartingSnakeLLValue = board => {
+  const rowSize = board.length;
+  const colSize = board[0].length;
+  const startingRow = Math.round(rowSize / 3);
+  const startingCol = Math.round(colSize / 3);
+  const startingCell = board[startingRow][startingCol];
+  return {
+    row: startingRow,
+    col: startingCol,
+    cell: startingCell,
+  };
+};
+
 const board = createBoard(BOARD_SIZE)
 
-//this will run when user starts server
-io.on("connection", (socket) =>{
-    let awesome = getStartingSnakeLLValue(board)
-    snakes[socket.id]= {
-        list: new SinglyLinkedList(awesome),
-        cells: Array.from(new Set([awesome.cell])),
-        color: "green",
-        direction: Direction.RIGHT,
-
-    }
+// Handle new connections
+io.on("connection", (socket) => {
+    // Initialize new snake for the connected client
+    let startingPosition = getStartingSnakeLLValue(board);
+    snakes[socket.id] = {
+      list: new SinglyLinkedList(startingPosition),
+      cells: Array.from(new Set([startingPosition.cell])),
+      color: "green",
+      direction: Direction.RIGHT,
+      started: false,
+    };
+  
+    // Add the new snake's cells to the total cells
     snakes[socket.id].cells.forEach(cell => totalSnakeCells.add(cell));
   
-    
-
- 
-
-    socket.emit("snakeID", socket.id, (response) =>{
-        console.log(response)
-        
-    })
-    //broadcasted to everyone
-    io.emit('updatePlayers', snakes, Array.from(totalSnakeCells))
-    
-    socket.on('changeDirection', (data) => {
-        const { id, direction } = data;
-    
-        if (snakes[id]) {
-          // Update the direction of the snake with the given id
-          snakes[id].direction = direction;
-        }
-        
-      
-      });
-
-      socket.on('updateSnake', (data) => {
-        const { snake, id, tSnakeCells } = data;
-      
-
-        if (snakes[id]) {
-        
-          snakes[id].list = snake.list;
-          snakes[id].cells = snake.cells;
-          snakes[id].direction = snake.direction;
-        } else {
-          console.log('No snake with id:', id);
-        }
-        totalSnakeCells = new Set(tSnakeCells);
-        io.emit('updatePlayers', snakes, tSnakeCells, foodCell);
-      });
-
-    socket.on("disconnect", (reason)=>{
-        console.log(reason);
-
-        // Get the cells of the disconnected snake
-        handleSnakeDeath(socket.id);
-        io.emit('updateGameState', {snakes: snakes, totalSnakeCells: Array.from(SnakeCells), foodCell: foodCell});
-        
-    })
-
-    
-    let isMoving = false;
-
-//broadcasting sends to everybody, while we just want to send to a room so nah
-    //gets the send message event, sends out the receive message
+    // Send the client their snake ID
+    socket.emit("snakeID", socket.id, (response) => {
+      console.log(response);
+    });
   
-})
+    // Update all clients with the new game state
+    io.emit('updatePlayers', snakes, Array.from(totalSnakeCells));
+  
+    // Handle direction change requests from clients
+    socket.on('changeDirection', (data) => {
+      const { id, direction } = data;
+      if (snakes[id]) {
+        snakes[id].direction = direction;
+      }
+    });
 
-setInterval(() => {
+    socket.on('start', () => {
+        if (snakes[socket.id]) {
+          snakes[socket.id].started = true;
+        }
+      
+    });
+  
+    // Handle snake updates from clients
+    socket.on('updateSnake', (data) => {
+      const { snake, id, tSnakeCells } = data;
+      if (snakes[id]) {
+        snakes[id].list = snake.list;
+        snakes[id].cells = snake.cells;
+        snakes[id].direction = snake.direction;
+      } else {
+        console.log('No snake with id:', id);
+      }
+      totalSnakeCells = new Set(tSnakeCells);
+      io.emit('updatePlayers', snakes, tSnakeCells, foodCell);
+    });
+  
+    // Handle client disconnections
+    socket.on("disconnect", (reason) => {
+      console.log(reason);
+      handleSnakeDeath(socket.id);
+      io.emit('updateGameState', {snakes: snakes, totalSnakeCells: Array.from(SnakeCells), foodCell: foodCell});
+    });
+  });
+  
+  // Move the snakes every second and update all clients with the new game state
+  setInterval(() => {
     moveSnakes();
     io.emit('updateGameState', {snakes: snakes, totalSnakeCells: Array.from(SnakeCells), foodCell: foodCell});
-}, 1000);
-
+  }, 100);
 
 server.listen(5174, () =>{
     console.log("SERVER IS RUNNING")
@@ -187,6 +172,7 @@ server.listen(5174, () =>{
 
 const moveSnakes = () => {
     Object.entries(snakes).forEach(([socketId, snake]) => {
+      if (snakes[socketId].started){  
       const currentHeadCoords = {
         row: snake.list.head.value.row,
         col: snake.list.head.value.col,
@@ -282,7 +268,7 @@ const moveSnakes = () => {
       snake.cells = newSnakeCells;
       snakes[socketId].cells = new Set([newSnakeCells]);
       snakes[socketId].list = snake.list;
-    });
+}});
   };
   
   const growSnake = (newSnakeCells, snake) => {
@@ -392,8 +378,9 @@ const moveSnakes = () => {
         snakes[id].list = new SinglyLinkedList(getStartingSnakeLLValue(board));
         snakes[id].cells = new Set([snakes[id].list.head.value.cell]);
         snakes[id].direction = Direction.RIGHT;
+        snakes[id].started = false;
+     
 
-        
         
     }
     
