@@ -14,5 +14,8 @@ function reverseLinkedList(head) {
   }
   return previous
 }
-
-module.exports = { randomIntFromInterval, reverseLinkedList };
+const getRandomColor = () => {
+  const getByte = () => Math.round(Math.random() * 255);
+  return `rgb(${getByte()}, ${getByte()}, ${getByte()})`;
+};
+module.exports = { randomIntFromInterval, reverseLinkedList, getRandomColor };

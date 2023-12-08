@@ -2,7 +2,7 @@ import {useState, useRef} from "react"
 import './Board.css';
 import TitleScreen from "./titlescreen";
 import { useEffect } from "react";
-
+import { randomIntFromInterval } from "./lib/utils";
 
 import BlockDescription from "./Blockdescription";
 import io from 'socket.io-client'
@@ -28,6 +28,23 @@ const Direction={
     LEFT:'LEFT'
 }
 
+const deathMessages = [
+"You're snake food now!",
+"Slithered into oblivion!",
+"You've hiss-torically failed!",
+"Sssssssorry, game over!",
+"You've been coiled out!",
+"Snake? Snake?! Snaaaaake!",
+"You've been sssssssnuffed out!",
+"You've bitten the dust!",
+"You're one with the grass now!",
+"You've been rattled and rolled!",
+"You've been sssssssunk!",
+"You've been hiss-terically defeated!",
+"You've been sssssssilenced!",
+"You've been ssssssswept away!",
+"You've been sssssssnuffed!",
+]
 
 
 
@@ -40,8 +57,8 @@ const BOARD_SIZE = 15;
 const Board = () =>{
   const [gameStatus, setGameStatus] = useState("titleScreen");
   const [score, setScore] = useState(0);
-  const [board, setBoard] = useState(createBoard(BOARD_SIZE));
-
+  const [gameboard, setBoard] = useState(createBoard(BOARD_SIZE));
+ 
   const [gamespeed, setGameSpeed] = useState(150)
   const [direction, setDirection] = useState(Direction.RIGHT) ;
   const directionRef = useRef(direction.RIGHT);
@@ -50,13 +67,10 @@ const Board = () =>{
   const [snakeCells, setSnakeCells] = useState(new Set([]));
   const [foodCell, setFoodCell] = useState(null);
   const [teleportationCell, setTeleportationCell] =useState(0);
-  
-  const [passedPortal, setPassedPortal]= useState(false);
-  const [touchedPortal, setTouchedPortal] = useState(false);
-  const [NextTeleportationCell, setNextTeleportationCell] = useState(null);
-  const [nextPortal, setNextPortal] = useState(false);
+  const[title, setTitle] = useState("Welcome to Elite Snake");
+ 
   const [isLoading, setIsLoading] = useState(true);
-
+  const [hasDied, setHasDied] = useState(false);
  
   const [foodShouldReverseDirection, setFoodShouldReverseDirection] = useState(false);
   const [foodShouldTeleport, setFoodShouldTeleport] = useState(false);
@@ -65,8 +79,7 @@ const Board = () =>{
  
   let playerSnake;
   let playerID;
-  let startingList;
-  let startingCell;
+  
   socket.on('snakeID', (id, callback)=>{
     //ISSUE is here.. we arent getting anything I guess
     playerID = id;
@@ -79,6 +92,7 @@ const Board = () =>{
     if(!isLoading){
       
     socket.emit('start');
+    setGameStatus("playing");
     }
    
   };
@@ -87,34 +101,28 @@ const Board = () =>{
 
   socket.on('updatePlayers', (backendplayers, totalSnakeCells) => {
     
-    let newSnakeCells = new Set(snakeCells)
-    totalSnakeCells.forEach((cell)=>{newSnakeCells.add(cell)})
+    let newSnakeCells = {};
+    totalSnakeCells.forEach((cellData) => {
+        newSnakeCells[cellData.cell] = cellData.color;
+    });
 
     for(const id in backendplayers){
-      const backendPlayer = backendplayers[id]
+      const backendPlayer = backendplayers[id];
 
       if(!snakes[id]){
-       
         // Create a new Snake if it doesn't exist yet
         const cells = Array.isArray(backendPlayer.cells) ? backendPlayer.cells : [];
-        snakes[id] = new Snake(backendPlayer.list, cells, backendPlayer.color, backendPlayer.direction, backendPlayer.portalStatus)
-        
-    
-
+        snakes[id] = new Snake(backendPlayer.list, cells, backendPlayer.color, backendPlayer.direction, backendPlayer.portalStatus);
       }
     }
   
     for(const id in snakes){
       if(!backendplayers[id]){
         // Delete the Snake if it doesn't exist in the backendplayers
-        delete snakes[id]
-
+        delete snakes[id];
       }
-
     }
-    
-
-  
+ 
     // Make sure the playerSnake is updated correctly
     
     //console.log('Updated playerSnake:', playerSnake);
@@ -129,25 +137,36 @@ const Board = () =>{
   });
   socket.on('updateGameState', (data) => {
     setSnakes(data.snakes);
-    setSnakeCells(new Set(data.totalSnakeCells));
+
+    let newSnakeCells = {};
+    data.totalSnakeCells.forEach((cellData) => {
+        newSnakeCells[cellData.cell] = cellData.color;
+    });
+    setSnakeCells(newSnakeCells);
+  
+
     setFoodCell(data.foodCell);
     setFoodShouldReverseDirection(data.foodShouldReverseDirection);  
     if(data.snakes[playerID]){
       playerSnake = data.snakes[playerID];
-      startingCell = playerSnake.list.head.value.cell;
-      startingList = playerSnake.list;
       directionRef.current = playerSnake.direction;
+      
     }
+    
     setTeleportationCell(data.teleportationCell);
     setFoodShouldTeleport(data.foodShouldTeleport);
     
     //renderGame(); // Render the game with the new state
-  });
+});
+socket.on('snake-death', (id) => {
 
-  socket.on('handleGameOver', (data) => {
-    setDirection(direction.RIGHT);
-    directionRef.current = direction.RIGHT; // Add this line
-  });
+    setTitle(deathMessages[randomIntFromInterval(0, deathMessages.length - 1)]);
+    setGameStatus('titleScreen');
+})
+  
+
+    
+
   socket.on('snakeReversed', (id) => {
     snakes[id].direction = getOppositeDirection(snakes[id].direction);
   });
@@ -183,24 +202,25 @@ const Board = () =>{
 return (
     <>
 
-    {gameStatus === "titleScreen" && <TitleScreen setGameStatus={setGameStatus} />}
+{gameStatus === "titleScreen" && <TitleScreen setGameStatus={setGameStatus} title={title} handleStart={handleStart} />}
 
-    {gameStatus === "playing" && (
+    
     <>
 
       <h1>Score: {score}</h1>
       
-      <button onClick={handleStart}>Start</button>
+    
 
       <div className = 'boardbox'>
-      <BlockDescription/>
+      {gameStatus === "playing" && <BlockDescription />}
+
       <div className="board">
       {score < 90 && (
           <>
-                {board.map((row, rowIdx) => (
+                {gameboard.map((row, rowIdx) => (
                     <div key={rowIdx} className="row">
                         {row.map((cellValue, cellIdx) => {
-                            const className = getCellClassName(
+                            const cellColor = getCellColor(
                                 cellValue,
                                 foodCell,
                                 teleportationCell,
@@ -210,7 +230,7 @@ return (
                                 
                             );
                             
-                            return <div key={cellIdx} className={className}></div>;
+                            return <div key={cellIdx} className="cell" style={{backgroundColor: cellColor}}></div>;;
                         })}
                     </div>
                 ))}
@@ -220,7 +240,7 @@ return (
         </div>
         </div>
         </>
-        )}
+        
     </>
   );
 
@@ -265,7 +285,7 @@ const getOppositeDirection = direction => {
     if (direction === Direction.LEFT) return Direction.RIGHT;
   };
   
-  const getCellClassName = (
+  const getCellColor = (
     cellValue,
     foodCell,
     teleportationCell,
@@ -274,23 +294,23 @@ const getOppositeDirection = direction => {
     snakeCells,
   ) => {
     if (cellValue === teleportationCell) {
-      return 'cell cell-blue';
+      return 'rgb(57, 114, 158)';
     }
     
     if (cellValue === foodCell) {
       if (foodShouldReverseDirection) {
-        return 'cell cell-purple';
+        return 'cadetblue';
       }
       if (foodShouldTeleport) {
-        return 'cell cell-orange';
+        return 'rgb(218, 120, 45)';
       }
-      return 'cell cell-red';
+      return 'pink';
     }
     
-    if (snakeCells.has(cellValue)) {
-      return 'cell cell-green';
+    if (cellValue in snakeCells) {
+      return snakeCells[cellValue];
     }
   
-    return 'cell';
+    return '#282c34'; // replace with your default color
   };
    export default Board
