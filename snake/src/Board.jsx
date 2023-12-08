@@ -3,33 +3,20 @@ import './Board.css';
 import TitleScreen from "./titlescreen";
 import { useEffect } from "react";
 
-import {randomIntFromInterval, useInterval, reverseLinkedList} from "../src/lib/utils"
+
 import BlockDescription from "./Blockdescription";
 import io from 'socket.io-client'
-const socket = io.connect("http://localhost:5174")
+const socket = io.connect("http://10.21.1.33:5174")
 
 
-class LinkedListNode{
-    constructor(value){
-        this.value = value;
-        this.next = null;
-    }
-}
 
-class SinglyLinkedList{
-    constructor(value){
-        const node = new LinkedListNode(value);
-        this.head = node;
-        this.tail = node;
-
-    }
-}
 class Snake{
-  constructor(list, cells, color, direction){
+  constructor(list, cells, color, direction, portalStatus){
     this.list = list;
     this.cells = new Set(cells);
     this.color = color;
     this.direction = direction;
+    this.portalStatus = portalStatus;
 
 }
 }
@@ -63,12 +50,12 @@ const Board = () =>{
   const [snakeCells, setSnakeCells] = useState(new Set([]));
   const [foodCell, setFoodCell] = useState(null);
   const [teleportationCell, setTeleportationCell] =useState(0);
-
+  
   const [passedPortal, setPassedPortal]= useState(false);
   const [touchedPortal, setTouchedPortal] = useState(false);
   const [NextTeleportationCell, setNextTeleportationCell] = useState(null);
   const [nextPortal, setNextPortal] = useState(false);
-
+  const [isLoading, setIsLoading] = useState(true);
 
  
   const [foodShouldReverseDirection, setFoodShouldReverseDirection] = useState(false);
@@ -84,23 +71,20 @@ const Board = () =>{
     //ISSUE is here.. we arent getting anything I guess
     playerID = id;
     
-    callback("we got the playerID")
+    callback(`we got the playerID {${playerID}}`)
    
   })
 
   const handleStart = () => {
+    if(!isLoading){
+      
     socket.emit('start');
+    }
+   
   };
-
-  const [isLoading, setIsLoading] = useState(true);
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 5000);
   
-    // Cleanup function to clear the timeout if the component unmounts before the 5 seconds are up
-    return () => clearTimeout(timer);
-  }, []); // Empty dependency array so this effect runs once on mount
+ 
+
   socket.on('updatePlayers', (backendplayers, totalSnakeCells) => {
     
     let newSnakeCells = new Set(snakeCells)
@@ -110,9 +94,10 @@ const Board = () =>{
       const backendPlayer = backendplayers[id]
 
       if(!snakes[id]){
-        
+       
         // Create a new Snake if it doesn't exist yet
-        snakes[id] = new Snake(backendPlayer.list, backendPlayer.cells, backendPlayer.color, backendPlayer.direction)
+        const cells = Array.isArray(backendPlayer.cells) ? backendPlayer.cells : [];
+        snakes[id] = new Snake(backendPlayer.list, cells, backendPlayer.color, backendPlayer.direction, backendPlayer.portalStatus)
         
     
 
@@ -145,7 +130,17 @@ const Board = () =>{
   socket.on('updateGameState', (data) => {
     setSnakes(data.snakes);
     setSnakeCells(new Set(data.totalSnakeCells));
-    setFoodCell(data.foodCell);  
+    setFoodCell(data.foodCell);
+    setFoodShouldReverseDirection(data.foodShouldReverseDirection);  
+    if(data.snakes[playerID]){
+      playerSnake = data.snakes[playerID];
+      startingCell = playerSnake.list.head.value.cell;
+      startingList = playerSnake.list;
+      directionRef.current = playerSnake.direction;
+    }
+    setTeleportationCell(data.teleportationCell);
+    setFoodShouldTeleport(data.foodShouldTeleport);
+    
     //renderGame(); // Render the game with the new state
   });
 
@@ -153,23 +148,30 @@ const Board = () =>{
     setDirection(direction.RIGHT);
     directionRef.current = direction.RIGHT; // Add this line
   });
+  socket.on('snakeReversed', (id) => {
+    snakes[id].direction = getOppositeDirection(snakes[id].direction);
+  });
   
   useEffect(() => {
     const handleKeydown = (e) => {
       const newDirection = getDirectionFromKey(e.key);
-      const OppositeDirection = getOppositeDirection(directionRef.current); // Use directionRef.current
-      console.log(directionRef.current, newDirection, OppositeDirection); // Use directionRef.current
+      const OppositeDirection = getOppositeDirection(directionRef.current);
+
       if (newDirection && newDirection !== OppositeDirection) {
-        // Send the new direction to the server
         setDirection(newDirection);
-        directionRef.current = newDirection; // Add this line
+        directionRef.current = newDirection;
         socket.emit('changeDirection', { id: playerID, direction: newDirection });
       }
     };
   
+    // Attach the handleKeydown function to the keydown event
     window.addEventListener('keydown', handleKeydown);
-    return () => window.removeEventListener('keydown', handleKeydown);
-  }, [playerID]); // Remove direction from the dependency array
+  
+    // Clean up the event listener when the component unmounts
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  }, [playerID, socket, setDirection, directionRef]);// Remove direction from the dependency array
 
  // useInterval(() => {
   //  moveSnake();
@@ -185,8 +187,11 @@ return (
 
     {gameStatus === "playing" && (
     <>
+
       <h1>Score: {score}</h1>
+      
       <button onClick={handleStart}>Start</button>
+
       <div className = 'boardbox'>
       <BlockDescription/>
       <div className="board">
@@ -252,17 +257,6 @@ const getDirectionFromKey = (key) =>{
 
 
 
-const getNextNodeDirection = (node, currentDirection) => {
-    if (node.next === null) return currentDirection;
-    const {row: currentRow, col: currentCol} = node.value;
-    const {row: nextRow, col: nextCol} = node.next.value;
-    if (nextRow === currentRow && nextCol === currentCol +1) return Direction.RIGHT
-    if (nextRow === currentRow && nextCol === currentCol -1) return Direction.LEFT
-    if (nextCol === currentCol && nextRow === currentRow +1) return Direction.DOWN
-    if (nextCol === currentCol && nextRow === currentRow -1) return Direction.UP  
-    return currentDirection
-
-}
 
 const getOppositeDirection = direction => {
     if (direction === Direction.UP) return Direction.DOWN;

@@ -2,7 +2,7 @@ const express = require('express');
 const http = require("http");
 const { Server } = require('socket.io');
 const cors = require("cors");
-
+const { randomIntFromInterval, reverseLinkedList } = require('./lib/utils');
 // Define classes
 class LinkedListNode {
   constructor(value) {
@@ -25,6 +25,7 @@ class Snake {
     this.cells = cells;
     this.color = color;
     this.direction = direction;
+    
   }
 }
 
@@ -37,7 +38,7 @@ const Direction = {
 }
 const BOARD_SIZE = 15;
 const PROBABILITY_OF_DIRECTION_REVERSAL_FOOD = 0;
-const PROBABILITY_OF_TELPORTATION_FOOD = 0;
+const PROBABILITY_OF_TELPORTATION_FOOD = 1;
 
 // Initialize variables
 let gameStatus = "titleScreen";
@@ -47,10 +48,8 @@ let direction;
 let SnakeCells = new Set([]);
 let foodCell = 23;
 let teleportationCell = 0;
-let passedPortal = false;
-let touchedPortal = false;
+
 let NextTeleportationCell = null;
-let nextPortal = false;
 let foodShouldReverseDirection = false;
 let foodShouldTeleport = false;
 let totalSnakeCells = new Set();
@@ -64,7 +63,7 @@ const server = http.createServer(app)
 // Initialize socket.io
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "http://10.21.1.33:5173",
     methods: ["GET", "POST"],
   },
   pingInterval: 2000,
@@ -110,6 +109,11 @@ io.on("connection", (socket) => {
       color: "green",
       direction: Direction.RIGHT,
       started: false,
+      portalStatus: {
+        passedPortal: false,
+        touchedPortal: false,
+        nextPortal: false,
+      },
     };
   
     // Add the new snake's cells to the total cells
@@ -138,12 +142,14 @@ io.on("connection", (socket) => {
       
     });
   
+  
     // Handle snake updates from clients
     socket.on('updateSnake', (data) => {
       const { snake, id, tSnakeCells } = data;
       if (snakes[id]) {
         snakes[id].list = snake.list;
         snakes[id].cells = snake.cells;
+        if(snake.direction != snakes[id].direction)
         snakes[id].direction = snake.direction;
       } else {
         console.log('No snake with id:', id);
@@ -161,12 +167,13 @@ io.on("connection", (socket) => {
   });
   
   // Move the snakes every second and update all clients with the new game state
-  setInterval(() => {
-    moveSnakes();
-    io.emit('updateGameState', {snakes: snakes, totalSnakeCells: Array.from(SnakeCells), foodCell: foodCell});
-  }, 100);
+ setInterval(() => {
+   moveSnakes();
+    
+    io.emit('updateGameState', {snakes: snakes, totalSnakeCells: Array.from(SnakeCells), foodCell: foodCell, foodShouldReverseDirection: foodShouldReverseDirection, foodShouldTeleport: foodShouldTeleport, teleportationCell: teleportationCell });
+}, 100);
 
-server.listen(5174, () =>{
+server.listen(5174, '0.0.0.0', () =>{
     console.log("SERVER IS RUNNING")
 })
 
@@ -187,34 +194,34 @@ const moveSnakes = () => {
   
       const nextHeadCell = board[nextHeadCoords.row][nextHeadCoords.col];
   
-      if (SnakeCells.has(nextHeadCell)) {
+      if (SnakeCells.has(nextHeadCell) && teleportationCell === 0) {
         handleSnakeDeath(socketId);
         return;
       }
 
       // Preserved commented-out code
-    /*
+    
     if(teleportationCell != 0){
       if(nextHeadCell ===teleportationCell){
-        setNextPortal(true)
-        setNextTeleportationCell(teleportationCell)
+        snake.portalStatus.nextPortal = true
+        NextTeleportationCell = teleportationCell
         let RC = getRC(foodCell)
         
         nextHeadCoords = {row: RC.row, col: RC.col}
       }
       if(nextHeadCell === foodCell){
         let RC = getRC(teleportationCell)
-        setNextPortal(true)
-        setNextTeleportationCell(foodCell)
+        snake.portalStatus.nextPortal = true
+        NextTeleportationCell = foodCell
   
         nextHeadCoords = {row: RC.row, col: RC.col}
       }
     }
 
-    if(nextPortal){
-      handleGoingThroughTeleport(NextTeleportationCell);            
+    if(snake.portalStatus.nextPortal){
+      handleGoingThroughTeleport(NextTeleportationCell, snake);            
     }
-    */
+    
 
   
       const newHead = new LinkedListNode({
@@ -239,36 +246,44 @@ const moveSnakes = () => {
       snake.list.tail = snake.list.tail.next;
       if (snake.list.tail === null) snake.list.tail = snake.list.head;
       
-            /*
+            
 
-        if(passedPortal){
+        if(snake.portalStatus.passedPortal){
         handleFoodConsumption(newSnakeCells);
-        setTouchedPortal(false)
-        setPassedPortal(false)
-        setNextPortal(false)
+        snake.portalStatus.touchedPortal = false;
+        snake.portalStatus.passedPortal= false;
+        snake.portalStatus.nextPortal =false;
             }
 
-        */
+        
 
       const foodConsumed = nextHeadCell === foodCell;
       if (foodConsumed) {
         growSnake(newSnakeCells, snake);
+       // console.log(`snake head: ${snake.list.head.value.cell}, food: ${foodCell} snake tail: ${snake.list.tail.value.cell}`)
         if (!foodShouldTeleport) {
-          if (foodShouldReverseDirection) reverseSnake();
+          if (foodShouldReverseDirection) reverseSnake(snake);
           handleFoodConsumption(newSnakeCells);
+          
+          newTotalSnakeCells.add(snake.list.head.value.cell)
         }
+       // console.log(`snake head: ${snake.list.head.value.cell}, food: ${foodCell} snake tail: ${snake.list.tail.value.cell}`)
       }
   
       const teleportfoodConsumed = nextHeadCell === teleportationCell;
       if (teleportfoodConsumed) {
         growSnake(newSnakeCells, snake);
       }
-  
+     // console.log(newSnakeCells)
+     // console.log('total')
       SnakeCells = newTotalSnakeCells;
+    
+     // console.log(newTotalSnakeCells)
       snake.cells = newSnakeCells;
       snakes[socketId].cells = new Set([newSnakeCells]);
       snakes[socketId].list = snake.list;
-}});
+      snakes[socketId].direction = snake.direction;
+}});  
   };
   
   const growSnake = (newSnakeCells, snake) => {
@@ -290,57 +305,61 @@ const moveSnakes = () => {
     snake.list.tail.next = currentTail;
     newSnakeCells.add(newTailCell);
   };
-    const reverseSnake = () => {
-        const tailNextNodeDirection = getNextNodeDirection(snake.tail, direction);
+    const reverseSnake = (snake) => {
+        const tailNextNodeDirection = getNextNodeDirection(snake.list.tail, snake.direction);
         const newDirection = getOppositeDirection(tailNextNodeDirection);
-        setDirection(newDirection);
-        reverseLinkedList(snake.tail);
-        const snakeHead = snake.head;
-        snake.head = snake.tail;
-        snake.tail = snakeHead;
+        snake.direction=newDirection;
+        
+        
+        reverseLinkedList(snake.list.tail);
+        const snakeHead = snake.list.head;
+        snake.list.head = snake.list.tail;
+        snake.list.tail = snakeHead;
+        
     }
     
     
     
     
-    const handleFoodConsumption = () =>{ 
-    const maxCellVal = BOARD_SIZE*BOARD_SIZE;
-    let nextFoodCell;
-    while(true){
-        nextFoodCell=randomIntFromInterval(1, maxCellVal);
-        if(SnakeCells.has(nextFoodCell) || foodCell === nextFoodCell) continue
-        break
-    }
-    const nextFoodShouldReverseDirection =
-    Math.random() < PROBABILITY_OF_DIRECTION_REVERSAL_FOOD;
-    const nextFoodShouldTeleport =
-    Math.random() < PROBABILITY_OF_TELPORTATION_FOOD;
-    TeleportationCell = 0
-    FoodShouldReverseDirection = false
-    FoodShouldTeleport =false
-    if(nextFoodShouldTeleport){
-        let secondFoodCell;
-        while(true){
-            secondFoodCell=randomIntFromInterval(1, maxCellVal);
-            if(SnakeCells.has(secondFoodCell) || teleportationCell === secondFoodCell || secondFoodCell === nextFoodCell) continue
-            break
+    const generateNewCell = (maxCellVal, excludedCells) => {
+        let newCell;
+        do {
+          newCell = randomIntFromInterval(1, maxCellVal);
+        } while (excludedCells.has(newCell));
+        return newCell;
+      };
+      
+      const handleFoodConsumption = () => {
+        const maxCellVal = BOARD_SIZE * BOARD_SIZE;
+        const excludedCells = new Set([...SnakeCells, foodCell]);
+      
+        // Generate the next food cell
+        const nextFoodCell = generateNewCell(maxCellVal, excludedCells);
+      
+        // Determine the type of the next food
+        const nextFoodShouldReverseDirection = Math.random() < PROBABILITY_OF_DIRECTION_REVERSAL_FOOD;
+        const nextFoodShouldTeleport = Math.random() < PROBABILITY_OF_TELPORTATION_FOOD;
+      
+        // Reset the food properties
+        teleportationCell = 0;
+        foodShouldReverseDirection = false;
+        foodShouldTeleport = false;
+      
+        if (nextFoodShouldTeleport) {
+          // Generate the second food cell for teleportation
+          excludedCells.add(nextFoodCell);
+          const secondFoodCell = generateNewCell(maxCellVal, excludedCells);
+      
+          foodShouldTeleport = nextFoodShouldTeleport;
+          teleportationCell = secondFoodCell;
+        } else {
+          foodShouldReverseDirection = nextFoodShouldReverseDirection;
         }
-        FoodShouldTeleport = nextFoodShouldTeleport;
-        TeleportationCell = secondFoodCell;
-    }
-    else{
-      FoodShouldReverseDirection = nextFoodShouldReverseDirection;
-    }
-    
-    
-    foodCell = nextFoodCell;
-    
-    
-    
-    Score =score + 1;
-    
-    }
-    
+      
+        // Update the food cell and score
+        foodCell = nextFoodCell;
+        Score = score + 1;
+      };
     
     
     
@@ -356,9 +375,9 @@ const moveSnakes = () => {
         setFoodShouldReverseDirection(false);
         //setDirection(Direction.RIGHT);
         setNextTeleportationCell(null);
-        setTouchedPortal(false)
-        setPassedPortal(false)
-        setNextPortal(false)
+        //setTouchedPortal(false)
+       //setPassedPortal(false)
+        //setNextPortal(false)
        
     
     }
@@ -379,19 +398,22 @@ const moveSnakes = () => {
         snakes[id].cells = new Set([snakes[id].list.head.value.cell]);
         snakes[id].direction = Direction.RIGHT;
         snakes[id].started = false;
+        snakes[id].portalStatus.passedPortal = false;
+        snakes[id].portalStatus.touchedPortal = false;
+        snakes[id].portalStatus.nextPortal = false;
      
 
         
     }
     
-    const handleGoingThroughTeleport = (cell) =>{
-      if(!touchedPortal){
-      let temp = snake.tail
+    const handleGoingThroughTeleport = (cell, snake) =>{
+      if(!snake.portalStatus.touchedPortal){
+      let temp = snake.list.tail
       while (temp!=null && temp.next != null){
     
         if(temp.next.value.cell ===cell){
             //if it ever equals it, dont handle food consumption.
-            setTouchedPortal(true)
+            snake.portalStatus.touchedPortal = true
             
             break;
     
@@ -400,9 +422,9 @@ const moveSnakes = () => {
     }
     }
     
-    if(touchedPortal){
+    if(snake.portalStatus.touchedPortal){
      //if we touched the portal previously, and no cells from tail to head equal the cell, then we are all goo
-     let temp = snake.tail
+     let temp = snake.list.tail
      let tempbool = false
      while(temp!= null){
       if(temp.value.cell === cell){
@@ -414,7 +436,7 @@ const moveSnakes = () => {
       temp = temp.next
      }
      if(!tempbool) {
-      setPassedPortal(true)
+      snake.portalStatus.passedPortal = true
      }
     
     }
@@ -499,6 +521,4 @@ const moveSnakes = () => {
         let val = Number
         return {row, col, val}
       }
-    const randomIntFromInterval = (min, max) => {
-            return Math.floor(Math.random() * (max - min + 1) + min);
-    };
+
