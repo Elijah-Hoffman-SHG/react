@@ -3,6 +3,7 @@ const http = require("http");
 const { Server } = require('socket.io');
 const cors = require("cors");
 const { randomIntFromInterval, reverseLinkedList, getRandomColor } = require('./lib/utils');
+const { start } = require('repl');
 // Define classes
 class LinkedListNode {
   constructor(value) {
@@ -28,8 +29,8 @@ const Direction = {
   LEFT: 'LEFT'
 }
 const BOARD_SIZE = 15;
-const PROBABILITY_OF_DIRECTION_REVERSAL_FOOD = 0;
-const PROBABILITY_OF_TELPORTATION_FOOD = 1;
+const PROBABILITY_OF_DIRECTION_REVERSAL_FOOD = .3;
+const PROBABILITY_OF_TELPORTATION_FOOD = .3;
 
 // Initialize variables
 let score = 0;
@@ -52,7 +53,7 @@ const server = http.createServer(app)
 // Initialize socket.io
 const io = new Server(server, {
   cors: {
-    origin: "http://10.21.1.33:5173",
+    origin: "http://192.168.0.225:5173",
     methods: ["GET", "POST"],
   },
   pingInterval: 2000,
@@ -92,9 +93,10 @@ const board = createBoard(BOARD_SIZE)
 io.on("connection", (socket) => {
     // Initialize new snake for the connected client
     let startingPosition = getStartingSnakeLLValue(board);
+    let startingCell = Array.from(startingPosition.cell);
     snakes[socket.id] = {
       list: new SinglyLinkedList(startingPosition),
-      cells: Array.from(new Set([startingPosition.cell])),
+      cells: startingCell,
       color: getRandomColor(),
       direction: Direction.RIGHT,
       started: false,
@@ -103,6 +105,7 @@ io.on("connection", (socket) => {
         touchedPortal: false,
         nextPortal: false,
       },
+      score: 0,
     
     };
   
@@ -130,7 +133,13 @@ io.on("connection", (socket) => {
         snakes[id].direction = direction;
       }
     });
+    socket.on('changeColor', (color) => {
+      if (snakes[socket.id]) {
+        snakes[socket.id].color= color;
+      }
+    })
 
+    
     socket.on('start', () => {
         if (snakes[socket.id]) {
           snakes[socket.id].started = true;
@@ -172,7 +181,7 @@ const moveSnakes = () => {
   
       if (isOutOfBounds(nextHeadCoords, board)) {
         handleSnakeDeath(socketId);
-        io.to(socketId).emit('snake-death', { id: socketId });
+        io.to(socketId).emit('snake-death', snake.color);
         return;
       }
   
@@ -180,7 +189,7 @@ const moveSnakes = () => {
   
       if (nextHeadCell in SnakeCells && teleportationCell === 0) {
         handleSnakeDeath(socketId);
-        io.to(socketId).emit('snake-death', { id: socketId });
+        io.to(socketId).emit('snake-death',  snake.color);
         return;
       }
 
@@ -241,12 +250,15 @@ const moveSnakes = () => {
       const foodConsumed = nextHeadCell === foodCell;
       if (foodConsumed) {
         growSnake(newSnakeCells, snake);
+        snakes[socketId].score +=1;
+        
        // console.log(`snake head: ${snake.list.head.value.cell}, food: ${foodCell} snake tail: ${snake.list.tail.value.cell}`)
         if (!foodShouldTeleport) {
           if (foodShouldReverseDirection) reverseSnake(snake);
           handleFoodConsumption(newSnakeCells);
           newSnakeCells.add(snake.list.head.value.cell);
           newTotalSnakeCells[snake.list.head.value.cell] = snake.color;
+
         }
        // console.log(`snake head: ${snake.list.head.value.cell}, food: ${foodCell} snake tail: ${snake.list.tail.value.cell}`)
       }
@@ -254,6 +266,8 @@ const moveSnakes = () => {
       const teleportfoodConsumed = nextHeadCell === teleportationCell;
       if (teleportfoodConsumed) {
         growSnake(newSnakeCells, snake);
+        snakes[socketId].score +=1;
+       
       }
      // console.log(newSnakeCells)
      // console.log('total')
@@ -264,16 +278,20 @@ const moveSnakes = () => {
       snakes[socketId].cells = newSnakeCells;
       snakes[socketId].list = snake.list;
       snakes[socketId].direction = snake.direction;
+      
 }});  
   };
   
   const growSnake = (newSnakeCells, snake) => {
     const growthNodeCoords = getGrowthNodeCoords(snake.list.tail, snake.direction);
-  
+    
+    
     if (isOutOfBounds(growthNodeCoords, board) && !foodShouldTeleport) {
       return;
     }
-  
+
+
+  //TODO: fix this, when portals on edge, it doesnt work
     const newTailCell = board[growthNodeCoords.row][growthNodeCoords.col];
     const newTail = new LinkedListNode({
       row: growthNodeCoords.row,
@@ -363,6 +381,7 @@ const moveSnakes = () => {
     }
     const handleSnakeDeath = (id) => { 
         // Get the cells of the dead snake
+        snakes[id].score = 0;
         const deadSnakeCells = snakes[id].cells;
       
         // Remove each cell of the dead snake from SnakeCells

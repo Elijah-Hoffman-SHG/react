@@ -1,9 +1,10 @@
 .App{
   text-align: center;
-  background-color: #282c34;
+  background-color: rgb(50,49,51);
   min-height: 100vh;
   overflow: hidden;
   flex-direction: column;
   font-size: calc(10px+2vmin);
   color:white;
+  
 }

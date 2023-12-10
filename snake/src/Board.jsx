@@ -3,10 +3,9 @@ import './Board.css';
 import TitleScreen from "./titlescreen";
 import { useEffect } from "react";
 import { randomIntFromInterval } from "./lib/utils";
-
-import BlockDescription from "./Blockdescription";
+import Dispbox from "./nav";
 import io from 'socket.io-client'
-const socket = io.connect("http://10.21.1.33:5174")
+const socket = io.connect("http://192.168.0.225:5174")
 
 
 
@@ -74,7 +73,7 @@ const Board = () =>{
  
   const [foodShouldReverseDirection, setFoodShouldReverseDirection] = useState(false);
   const [foodShouldTeleport, setFoodShouldTeleport] = useState(false);
-
+  const [color, setColor] = useState('#1C82BF'); // Default colr is a blueish color green
   
  
   let playerSnake;
@@ -88,10 +87,14 @@ const Board = () =>{
    
   })
 
-  const handleStart = () => {
+  const handleStart = (color) => {
     if(!isLoading){
-      
     socket.emit('start');
+    socket.emit('changeColor', color );
+    if(color){
+    setColor(color);
+    }
+    
     setGameStatus("playing");
     }
    
@@ -143,13 +146,16 @@ const Board = () =>{
         newSnakeCells[cellData.cell] = cellData.color;
     });
     setSnakeCells(newSnakeCells);
-  
+    
 
     setFoodCell(data.foodCell);
     setFoodShouldReverseDirection(data.foodShouldReverseDirection);  
     if(data.snakes[playerID]){
       playerSnake = data.snakes[playerID];
       directionRef.current = playerSnake.direction;
+      if(playerSnake.score){
+        setScore(playerSnake.score);
+      }
       
     }
     
@@ -158,9 +164,11 @@ const Board = () =>{
     
     //renderGame(); // Render the game with the new state
 });
-socket.on('snake-death', (id) => {
-
+socket.on('snake-death', (color) => {
+    
+    
     setTitle(deathMessages[randomIntFromInterval(0, deathMessages.length - 1)]);
+    setScore(0);
     setGameStatus('titleScreen');
 })
   
@@ -201,20 +209,23 @@ socket.on('snake-death', (id) => {
 
 return (
     <>
-
-{gameStatus === "titleScreen" && <TitleScreen setGameStatus={setGameStatus} title={title} handleStart={handleStart} />}
+           
+<div className="game-container">
+{gameStatus === "titleScreen" && <TitleScreen setGameStatus={setGameStatus} title={title} handleStart={handleStart} inputcolor={color} />}
 
     
     <>
 
-      <h1>Score: {score}</h1>
+      
       
     
-
+      
       <div className = 'boardbox'>
-      {gameStatus === "playing" && <BlockDescription />}
-
+      {gameStatus === "playing" && <Dispbox color = {color} score = {score}/>}
+    
+      
       <div className="board">
+      
       {score < 90 && (
           <>
                 {gameboard.map((row, rowIdx) => (
@@ -241,7 +252,9 @@ return (
         </div>
         </>
         
+        </div>
     </>
+    
   );
 
         }
@@ -294,23 +307,23 @@ const getOppositeDirection = direction => {
     snakeCells,
   ) => {
     if (cellValue === teleportationCell) {
-      return 'rgb(57, 114, 158)';
+      return 'rgb(79,193,233)';
     }
     
     if (cellValue === foodCell) {
       if (foodShouldReverseDirection) {
-        return 'cadetblue';
+        return 'rgb(255, 186, 84)';
       }
       if (foodShouldTeleport) {
-        return 'rgb(218, 120, 45)';
+        return 'rgb(252,110,81)';
       }
-      return 'pink';
+      return 'rgb(237, 85, 101)';
     }
     
     if (cellValue in snakeCells) {
       return snakeCells[cellValue];
     }
   
-    return '#282c34'; // replace with your default color
+    return 'rgb(50,49,51)'; // replace with your default color
   };
    export default Board

@@ -1,20 +1,31 @@
+.game-container{
+    position:relative;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+}
 .board{
     outline: 2px solid lightblue;
     user-select: none;
     color: #282c34;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 0;
 }
 h4{
     color: pink;
 }
 .row{
     color: white;
-    height:35px;
+    height:50px;
 }
 .cell{
     border-radius: 30%;
     color: white;
-    width: 35px;
-    height: 35px;
+    width:  50px;
+    height: 50px;
     outline: 1px solid lightblue;
     display: inline-block;
    
@@ -23,32 +34,41 @@ h4{
     background-color: rgb(7, 95, 66);
 }
 .cell-red{
-    background-color: pink;
+    background-color: rgb(237, 85, 101);
 }
 .cell-purple{
-    background-color: cadetblue;
+    background-color: rgb(255, 186, 84);
     color: white;
 }
 .cell-blue{
-    background-color: rgb(57, 114, 158);
+    background-color: rgb(79,193,233);
 }
 .cell-orange{
-    background-color: rgb(218, 120, 45);
+    background-color: rgb(252,110,81);
 }
 .cell-yellow{
     background-color: rgb(105, 185, 0);
 }
 .boardbox{
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: row;
+    gap: 1rem;
     align-items: center;
     justify-content: space-around;
     
 }
 .title-screen{
+    
         position: absolute;
         text-align: center;
-        background-color: #282c34;
+        
+
+        border-radius: 20px;
+        border:1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
@@ -60,12 +80,22 @@ h4{
         color:white;
         box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
         border-radius: 37px;
+        z-index: 1;
+}
+.title-screen h1{
+    font-size: 3rem;
+    font-weight: 600;
+    color: white;
+  
+    margin-bottom: 0;
+    backdrop-filter: none;
+   
+    background: none;
 }
 
 .button-23 {
  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-  background-color: #282c34;
-  border: 1px solid lightblue;
+  background-color: rgb(50,49,51); 
   border-radius: 8px;
   box-sizing: border-box;
   color: white;
@@ -105,3 +135,4 @@ h4{
   cursor: not-allowed;
   opacity: 1;
 }
+

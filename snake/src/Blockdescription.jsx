@@ -1,12 +1,12 @@
 import "./blockdescription.css"
-function BlockDescription() {
+function BlockDescription({color}) {
   
 
     return (
         <>
         <div className="box">
           <div className="description">
-            <div className="cell-green cell"></div>
+            <div className="cell" style={{backgroundColor: color}}></div>
             <h5>Is you</h5>
           </div>
         <div className="description">
@@ -25,7 +25,7 @@ function BlockDescription() {
             <h5>Is food that teleports you</h5>
         </div>
         </div>
-       
+      
         </>
     )
         
