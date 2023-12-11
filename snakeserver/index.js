@@ -36,7 +36,7 @@ const PROBABILITY_OF_TELPORTATION_FOOD = .3;
 let score = 0;
 let gameSpeed = 150;
 let SnakeCells = {};
-let foodCell = 23;
+let foodCell = 15;
 let teleportationCell = 0;
 
 let NextTeleportationCell = null;
@@ -53,7 +53,7 @@ const server = http.createServer(app)
 // Initialize socket.io
 const io = new Server(server, {
   cors: {
-    origin: "http://192.168.0.225:5173",
+    origin: "http://10.21.1.33:5173",
     methods: ["GET", "POST"],
   },
   pingInterval: 2000,
@@ -489,26 +489,31 @@ const moveSnakes = () => {
     
     }
     const getGrowthNodeCoords = (snakeTail, currentDirection) => {
-        
-        const tailNextNodeDirection = getNextNodeDirection(
-            snakeTail,
-            currentDirection,
-          );
-        
-        const growthDirection = getOppositeDirection(tailNextNodeDirection);
-        const currentTailCoords = {
-            row: snakeTail.value.row,
-            col: snakeTail.value.col,
+      const tailNextNodeDirection = getNextNodeDirection(snakeTail, currentDirection);
+      const currentTailCoords = {
+        row: snakeTail.value.row,
+        col: snakeTail.value.col,
+      };
     
-        };
-        const growthNodeCoords = getCoordsInDirection(
-            currentTailCoords,
-            growthDirection,
-        )
+      //if the row is 0, amd the direction is up, then grow down
+      //if the row is 0, and the direction is down, grow down
+      if (currentTailCoords.row === 0 && tailNextNodeDirection === Direction.DOWN) {
+        return getCoordsInDirection(currentTailCoords, Direction.DOWN);
+      }
+      if (currentTailCoords.row === BOARD_SIZE - 1 && tailNextNodeDirection === Direction.UP) {
+        return getCoordsInDirection(currentTailCoords, Direction.UP);
+      }
+      if (currentTailCoords.col === 0 && tailNextNodeDirection === Direction.RIGHT) {
+        return getCoordsInDirection(currentTailCoords, Direction.RIGHT);
+      }
+      if (currentTailCoords.col === BOARD_SIZE - 1 && tailNextNodeDirection === Direction.LEFT) {
+        return getCoordsInDirection(currentTailCoords, Direction.LEFT);
+      }
     
-        return growthNodeCoords
-      
-    }
+      // If the tail is not on the edge of the board, grow in the opposite direction of the next node
+      const growthDirection = getOppositeDirection(tailNextNodeDirection);
+      return getCoordsInDirection(currentTailCoords, growthDirection);
+    };
     const getOppositeDirection = direction => {
         if (direction === Direction.UP) return Direction.DOWN;
         if (direction === Direction.RIGHT) return Direction.LEFT;
