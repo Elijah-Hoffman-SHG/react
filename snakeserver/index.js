@@ -176,6 +176,7 @@ io.on("connection", (socket) => {
 
 server.listen(3000, () =>{
     console.log("SERVER IS RUNNING")
+    console.log("origin:http://23.239.5.150:3001")
 })
 
 const moveSnakes = () => {
