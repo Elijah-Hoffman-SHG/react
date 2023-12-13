@@ -1,0 +1,11 @@
+{
+ 
+  "scripts": {
+    "start:snake": "cd snake && npm start",
+    "start:snakeserver": "cd snakeserver && node index.js",
+    "start": "concurrently \"npm run start:snake\" \"npm run start:snakeserver\""
+  },
+  "dependencies": {
+    "concurrently": "^6.5.1"
+  }
+}
