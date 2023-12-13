@@ -9,7 +9,7 @@ import './App.css'
 import './Board.css'
 import io from 'socket.io-client'
 import Leaderboard from './leaderboard.jsx';
-const socket = io.connect("http://10.21.1.33:5174")
+const socket = io.connect("http://23.239.5.150:5174")
 class Snake{
   constructor(list, cells, color, direction, portalStatus, score){
     this.list = list;

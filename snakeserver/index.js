@@ -53,7 +53,7 @@ const server = http.createServer(app)
 // Initialize socket.io
 const io = new Server(server, {
   cors: {
-    origin: "http://10.21.1.33:5173",
+    origin: "http://23.239.5.150:5173",
     methods: ["GET", "POST"],
   },
   pingInterval: 2000,
