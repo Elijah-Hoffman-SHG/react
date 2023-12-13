@@ -8,6 +8,7 @@ import TitleScreen from './titlescreen.jsx';
 import './App.css'
 import './Board.css'
 import io from 'socket.io-client'
+import Leaderboard from './leaderboard.jsx';
 const socket = io.connect("http://10.21.1.33:5174")
 class Snake{
   constructor(list, cells, color, direction, portalStatus, score){
@@ -69,7 +70,8 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [foodShouldReverseDirection, setFoodShouldReverseDirection] = useState(false);
   const [foodShouldTeleport, setFoodShouldTeleport] = useState(false);
-  const [color, setColor] = useState('#1C82BF'); // Default colr is a blueish color green
+  const [color, setColor] = useState('#1C82BF');
+  const [name, setName] = useState('Player');
   const [leaderboardlist, setLeaderboard] = useState([]); 
  
   let playerSnake;
@@ -90,6 +92,9 @@ const App = () => {
     setColor(color);
     }
     socket.emit('changeName', name);
+    if(name){
+    setName(name);
+    }
     setGameStatus("playing");
     }
      };
@@ -144,15 +149,25 @@ const App = () => {
       }
       
     }
-    Object.keys(data.snakes).forEach((id) => {
-      if(data.snakes[id].name){
-      if(data.snakes[id].score){
-        leaderboardlist[id] = {name: data.snakes[id].name, score: data.snakes[id].score};
+    let leaderboardArray = Object.keys(data.snakes).map((id) => {
+      if (data.snakes[id].name) {
+        return {
+          id: id,
+          name: data.snakes[id].name,
+          score: data.snakes[id].score || 0
+        };
       }
-      else{
-        leaderboardlist[id] = {name: data.snakes[id].name, score: 0};
-      }
-    }
+      return null;
+    }).filter(item => item !== null); // filter out null values
+    
+    leaderboardArray.sort((a, b) => b.score - a.score); // sort in descending order of score
+    
+    let leaderboardlist = {};
+    leaderboardArray.forEach(item => {
+      leaderboardlist[item.id] = {
+        name: item.name,
+        score: item.score
+      };
     });
     setLeaderboard(leaderboardlist);
     setTeleportationCell(data.teleportationCell);
@@ -198,10 +213,10 @@ socket.on('snake-death', (color) => {
     <>
       <div className='App'>
         <div className="game-container">
-        {gameStatus === "titleScreen" && <TitleScreen setGameStatus={setGameStatus} title={title} handleStart={handleStart} inputcolor={color} />}
+        {gameStatus === "titleScreen" && <TitleScreen setGameStatus={setGameStatus} title={title} handleStart={handleStart} inputcolor={color} inputname={name} />}
           <>
             <div className = 'boardbox'>
-              {gameStatus === "playing" && <Dispbox color = {color} score = {score}/>}  
+            { <Leaderboard leaderboard={leaderboardlist}/>}
               <div className="board">
                 <Board 
                 gameboard={gameboard} 
@@ -212,9 +227,12 @@ socket.on('snake-death', (color) => {
                 foodShouldTeleport={foodShouldTeleport}
                 />
               </div>
+              
+              {gameStatus === "playing" && <Dispbox color = {color} score = {score}/>}  
             </div>
           </>
         </div>
+       
       </div>
     </>
   )

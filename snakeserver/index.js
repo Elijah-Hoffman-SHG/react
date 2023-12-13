@@ -29,8 +29,8 @@ const Direction = {
   LEFT: 'LEFT'
 }
 const BOARD_SIZE = 15;
-const PROBABILITY_OF_DIRECTION_REVERSAL_FOOD = 0;
-const PROBABILITY_OF_TELPORTATION_FOOD = 1;
+const PROBABILITY_OF_DIRECTION_REVERSAL_FOOD = .3;
+const PROBABILITY_OF_TELPORTATION_FOOD = .3;
 
 // Initialize variables
 let score = 0;
