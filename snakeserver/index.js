@@ -53,7 +53,7 @@ const server = http.createServer(app)
 // Initialize socket.io
 const io = new Server(server, {
   cors: {
-    origin: "http://23.239.5.150:5173",
+    origin: "http://23.239.5.150:3001",
     methods: ["GET", "POST"],
   },
   pingInterval: 2000,
@@ -174,7 +174,7 @@ io.on("connection", (socket) => {
     io.emit('updateGameState', {snakes: snakes, totalSnakeCells: totalSnakeCells, foodCell: foodCell, foodShouldReverseDirection: foodShouldReverseDirection, foodShouldTeleport: foodShouldTeleport, teleportationCell: teleportationCell });
 }, gameSpeed);
 
-server.listen(5174, '0.0.0.0', () =>{
+server.listen(3000, '0.0.0.0', () =>{
     console.log("SERVER IS RUNNING")
 })
 
