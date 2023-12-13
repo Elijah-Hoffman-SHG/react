@@ -1,7 +1,6 @@
 {
- 
   "scripts": {
-    "start:snake": "cd snake && npm start",
+    "start:snake": "cd snake && npm run dev",
     "start:snakeserver": "cd snakeserver && node index.js",
     "start": "concurrently \"npm run start:snake\" \"npm run start:snakeserver\""
   },
