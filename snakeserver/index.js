@@ -174,7 +174,7 @@ io.on("connection", (socket) => {
     io.emit('updateGameState', {snakes: snakes, totalSnakeCells: totalSnakeCells, foodCell: foodCell, foodShouldReverseDirection: foodShouldReverseDirection, foodShouldTeleport: foodShouldTeleport, teleportationCell: teleportationCell });
 }, gameSpeed);
 
-server.listen(3000, '0.0.0.0', () =>{
+server.listen(3000, () =>{
     console.log("SERVER IS RUNNING")
 })
 
