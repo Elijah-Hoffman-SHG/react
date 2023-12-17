@@ -1,17 +1,7 @@
-import {useState, useRef} from "react"
 
-import { useEffect } from "react";
 
 const Board = ({gameboard, snakeCells, foodCell, teleportationCell, foodShouldReverseDirection, foodShouldTeleport}) => {
 
-  useEffect(() => {
-    setBoard2(gameboard);
-    setSnakeCells2(snakeCells);
-    setFoodCell2(foodCell);
-    setTeleportationCell2(teleportationCell);
-    setFoodShouldReverseDirection2(foodShouldReverseDirection);
-    setFoodShouldTeleport2(foodShouldTeleport);
-  }, [gameboard, snakeCells, foodCell, teleportationCell, foodShouldReverseDirection, foodShouldTeleport]);
 return (
   <>
   {gameboard.map((row, rowIdx) => (
