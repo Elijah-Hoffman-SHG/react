@@ -8,8 +8,8 @@ const { Server } = require('socket.io')
 const io = new Server(server, { pingInterval: 2000, pingTimeout: 5000 })
 
 
-
-app.use(express.static(path.join(__dirname, '../snake/dist/index.html')));
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../snake/dist/')));
 
 
 
