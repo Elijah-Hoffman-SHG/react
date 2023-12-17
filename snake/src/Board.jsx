@@ -14,16 +14,16 @@ const Board = ({gameboard, snakeCells, foodCell, teleportationCell, foodShouldRe
   }, [gameboard, snakeCells, foodCell, teleportationCell, foodShouldReverseDirection, foodShouldTeleport]);
 return (
   <>
-  {gameboard2.map((row, rowIdx) => (
+  {gameboard.map((row, rowIdx) => (
     <div key={rowIdx} className="row">
       {row.map((cellValue, cellIdx) => {
         const cellColor = getCellColor(
         cellValue,
-        foodCell2,
-        teleportationCell2,
-        foodShouldReverseDirection2,
-        foodShouldTeleport2,
-        snakeCells2,       
+        foodCell,
+        teleportationCell,
+        foodShouldReverseDirection,
+        foodShouldTeleport,
+        snakeCells,       
       );  
         return <div key={cellIdx} className="cell" style={{backgroundColor: cellColor}}></div>;
        })}
