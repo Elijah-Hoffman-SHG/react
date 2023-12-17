@@ -9,7 +9,7 @@ const io = new Server(server, { pingInterval: 2000, pingTimeout: 5000 })
 
 
 
-app.use(express.static(path.join(__dirname, '../snake/dist')));
+app.use(express.static(path.join(__dirname, '../snake/dist/index.html')));
 
 
 
