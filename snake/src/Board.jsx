@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { randomIntFromInterval } from "./lib/utils";
 import Dispbox from "./nav";
 import io from 'socket.io-client'
+import LoadingScreen from "./LoadingScreen";
 const socket = io.connect("http://192.168.0.225:5174")
 
 
@@ -204,7 +205,7 @@ socket.on('snake-death', (color) => {
   //  moveSnake();
  //}, gamespeed);
  if(isLoading){
-  return<div>Loading...</div>
+  return<LoadingScreen/>
 }
 
 return (
