@@ -3,12 +3,7 @@ import {useState, useRef} from "react"
 import { useEffect } from "react";
 
 const Board = ({gameboard, snakeCells, foodCell, teleportationCell, foodShouldReverseDirection, foodShouldTeleport}) => {
-  const [gameboard2, setBoard2] = useState(gameboard);
-  const [snakeCells2, setSnakeCells2] = useState(snakeCells);
-  const [foodCell2, setFoodCell2] = useState(foodCell);
-  const [teleportationCell2, setTeleportationCell2] =useState(teleportationCell);
-  const [foodShouldReverseDirection2, setFoodShouldReverseDirection2] = useState(foodShouldReverseDirection);
-  const [foodShouldTeleport2, setFoodShouldTeleport2] = useState(foodShouldTeleport);
+
   useEffect(() => {
     setBoard2(gameboard);
     setSnakeCells2(snakeCells);
@@ -62,6 +57,6 @@ return (
       return snakeCells[cellValue];
     }
   
-    return 'rgb(50,49,51)'; // replace with your default color
+    return 'rgb(50,49,51)';
   };
    export default Board
