@@ -1,9 +1,20 @@
-const express = require('express');
-const http = require("http");
-const { Server } = require('socket.io');
-const cors = require("cors");
+const express = require('express')
+const app = express()
+
+// socket.io setup
+const http = require('http')
+const server = http.createServer(app)
+const { Server } = require('socket.io')
+const io = new Server(server, { pingInterval: 2000, pingTimeout: 5000 })
+
+
+
+app.use(express.static(path.join(__dirname, '../snake/dist')));
+
+
+
 const { randomIntFromInterval, reverseLinkedList, getRandomColor } = require('./lib/utils');
-const { start } = require('repl');
+
 // Define classes
 class LinkedListNode {
   constructor(value) {
@@ -34,32 +45,18 @@ const PROBABILITY_OF_TELPORTATION_FOOD = .3;
 
 // Initialize variables
 let score = 0;
-let gameSpeed = 150;
+let gameSpeed = 120;
 let SnakeCells = {};
-let foodCell = 23;
-let teleportationCell = 0;
+let foodCell = 16;
+let teleportationCell = 225;
 
 let NextTeleportationCell = null;
 let foodShouldReverseDirection = false;
-let foodShouldTeleport = false;
+let foodShouldTeleport = true;
 let totalSnakeCells = {};
 let snakes = {};
 
 // Create express app and server
-const app = express();
-app.use(cors());
-const server = http.createServer(app)
-
-// Initialize socket.io
-const io = new Server(server, {
-  cors: {
-    origin: "http://192.168.0.225:5173",
-    methods: ["GET", "POST"],
-  },
-  pingInterval: 2000,
-  pingTimeout: 5000
-});
-
 // Define helper functions
 const createBoard = BOARD_SIZE => {
   let counter = 1;
@@ -91,6 +88,7 @@ const board = createBoard(BOARD_SIZE)
 
 // Handle new connections
 io.on("connection", (socket) => {
+    
     // Initialize new snake for the connected client
     let startingPosition = getStartingSnakeLLValue(board);
     let startingCell = Array.from(startingPosition.cell);
@@ -108,6 +106,7 @@ io.on("connection", (socket) => {
       score: 0,
     
     };
+   
   
     // Add the new snake's cells to the total cells
     snakes[socket.id].cells.forEach(cell => totalSnakeCells[cell] = snakes[socket.id].color);
@@ -138,7 +137,12 @@ io.on("connection", (socket) => {
         snakes[socket.id].color= color;
       }
     })
+    
 
+    socket.on('changeName', (name) => {
+      if (snakes[socket.id]) {
+        snakes[socket.id].name= name;
+      }})
     
     socket.on('start', () => {
         if (snakes[socket.id]) {
@@ -152,7 +156,9 @@ io.on("connection", (socket) => {
     // Handle client disconnections
     socket.on("disconnect", (reason) => {
       console.log(reason);
+      
       handleSnakeDeath(socket.id);
+      delete snakes[socket.id];
       let totalSnakeCells = Object.entries(SnakeCells).map(([cell, color]) => ({ cell, color }));
       io.emit('updateGameState', {snakes: snakes, totalSnakeCells: totalSnakeCells, foodCell: foodCell});
     });
@@ -162,14 +168,17 @@ io.on("connection", (socket) => {
  setInterval(() => {
    moveSnakes();
     let totalSnakeCells = Object.entries(SnakeCells).map(([cell, color]) => ({ cell, color }));
+  
     io.emit('updateGameState', {snakes: snakes, totalSnakeCells: totalSnakeCells, foodCell: foodCell, foodShouldReverseDirection: foodShouldReverseDirection, foodShouldTeleport: foodShouldTeleport, teleportationCell: teleportationCell });
-}, 100);
+}, gameSpeed);
 
-server.listen(5174, '0.0.0.0', () =>{
+server.listen(3000, () =>{
     console.log("SERVER IS RUNNING")
+  
 })
 
 const moveSnakes = () => {
+  
     Object.entries(snakes).forEach(([socketId, snake]) => {
       if (snakes[socketId].started){  
       const currentHeadCoords = {
@@ -178,7 +187,7 @@ const moveSnakes = () => {
       };
   
       let nextHeadCoords = getCoordsInDirection(currentHeadCoords, snake.direction);
-  
+   
       if (isOutOfBounds(nextHeadCoords, board)) {
         handleSnakeDeath(socketId);
         io.to(socketId).emit('snake-death', snake.color);
@@ -187,7 +196,7 @@ const moveSnakes = () => {
   
       const nextHeadCell = board[nextHeadCoords.row][nextHeadCoords.col];
   
-      if (nextHeadCell in SnakeCells && teleportationCell === 0) {
+      if (nextHeadCell in SnakeCells) {
         handleSnakeDeath(socketId);
         io.to(socketId).emit('snake-death',  snake.color);
         return;
@@ -202,6 +211,7 @@ const moveSnakes = () => {
         let RC = getRC(foodCell)
         
         nextHeadCoords = {row: RC.row, col: RC.col}
+        
       }
       if(nextHeadCell === foodCell){
         let RC = getRC(teleportationCell)
@@ -211,11 +221,11 @@ const moveSnakes = () => {
         nextHeadCoords = {row: RC.row, col: RC.col}
       }
     }
-
+    
     if(snake.portalStatus.nextPortal){
       handleGoingThroughTeleport(NextTeleportationCell, snake);            
     }
-            
+
       const newHead = new LinkedListNode({
         row: nextHeadCoords.row,
         col: nextHeadCoords.col,
@@ -283,9 +293,10 @@ const moveSnakes = () => {
   };
   
   const growSnake = (newSnakeCells, snake) => {
+   
     const growthNodeCoords = getGrowthNodeCoords(snake.list.tail, snake.direction);
-    
-    
+
+    //should be 13
     if (isOutOfBounds(growthNodeCoords, board) && !foodShouldTeleport) {
       return;
     }
@@ -361,25 +372,9 @@ const moveSnakes = () => {
       };
     
     
-    const handleGameOver = () => {
-     
-        //const snakeLLStartingValue = getStartingSnakeLLValue(board);    
-        //setSnakes(new SinglyLinkedList(snakeLLStartingValue))
-        //setSnakeCells(new Set([snakeLLStartingValue.cell])),
-        
-        setFoodCell(snakeLLStartingValue.cell + 5);
-        setTeleportationCell(0);
-        setFoodShouldTeleport(false);
-        setFoodShouldReverseDirection(false);
-        //setDirection(Direction.RIGHT);
-        setNextTeleportationCell(null);
-        //setTouchedPortal(false)
-       //setPassedPortal(false)
-        //setNextPortal(false)
-       
-    
-    }
+   
     const handleSnakeDeath = (id) => { 
+     
         // Get the cells of the dead snake
         snakes[id].score = 0;
         const deadSnakeCells = snakes[id].cells;
@@ -402,7 +397,7 @@ const moveSnakes = () => {
         snakes[id].portalStatus.passedPortal = false;
         snakes[id].portalStatus.touchedPortal = false;
         snakes[id].portalStatus.nextPortal = false;
-     
+        snakes[id].score = 0;
 
         
     }
@@ -489,26 +484,42 @@ const moveSnakes = () => {
     
     }
     const getGrowthNodeCoords = (snakeTail, currentDirection) => {
-        
-        const tailNextNodeDirection = getNextNodeDirection(
-            snakeTail,
-            currentDirection,
-          );
-        
-        const growthDirection = getOppositeDirection(tailNextNodeDirection);
-        const currentTailCoords = {
-            row: snakeTail.value.row,
-            col: snakeTail.value.col,
+      const tailNextNodeDirection = getNextNodeDirection(snakeTail, currentDirection);
+      const currentTailCoords = {
+        row: snakeTail.value.row,
+        col: snakeTail.value.col,
+      };
+   
     
-        };
-        const growthNodeCoords = getCoordsInDirection(
-            currentTailCoords,
-            growthDirection,
-        )
+      //if the row is 0, amd the direction is up, then grow down
+      //if the row is 0, and the direction is down, grow down
+      if (currentTailCoords.row <=0 && tailNextNodeDirection === Direction.DOWN) {
+
+     
+        return getCoordsInDirection(currentTailCoords, Direction.DOWN);
+      }
+      if (currentTailCoords.row === BOARD_SIZE - 1 && tailNextNodeDirection === Direction.UP) {
+ 
     
-        return growthNodeCoords
+        return getCoordsInDirection(currentTailCoords, Direction.UP);
+      }
+      if (currentTailCoords.col === -1 && tailNextNodeDirection === Direction.RIGHT) {
+   
+   
+        return getCoordsInDirection(currentTailCoords, Direction.RIGHT);
+      }
+      if (currentTailCoords.col === BOARD_SIZE-1  && tailNextNodeDirection === Direction.LEFT) {
       
-    }
+    
+        return getCoordsInDirection(currentTailCoords, Direction.LEFT);
+      }
+    
+      // If the tail is not on the edge of the board, grow in the opposite direction of the next node
+      const growthDirection = getOppositeDirection(tailNextNodeDirection);
+   
+     
+      return getCoordsInDirection(currentTailCoords, growthDirection);
+    };
     const getOppositeDirection = direction => {
         if (direction === Direction.UP) return Direction.DOWN;
         if (direction === Direction.RIGHT) return Direction.LEFT;
@@ -517,8 +528,9 @@ const moveSnakes = () => {
       };
 
       const getRC = (Number) => {
-        let row = Math.floor(Number /BOARD_SIZE)
-        let col = Math.floor(Number % BOARD_SIZE) -1
+        let adjustedNumber = Number - 1;
+        let row = Math.floor(adjustedNumber /BOARD_SIZE)
+        let col = Math.floor(adjustedNumber % BOARD_SIZE)
         let val = Number
         return {row, col, val}
       }

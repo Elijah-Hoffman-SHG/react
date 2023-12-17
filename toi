@@ -1,0 +1,114 @@
+[33mcommit 8527b930a3a8e174da7c9e1d47787b196f0f7c7e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Mon Dec 11 09:47:57 2023 -0700
+
+    very confused
+
+[33mcommit e3992a06ee02510691df7c1f57850781fff6f023[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Mon Dec 11 09:38:20 2023 -0700
+
+    handling edge teleportation cases
+
+[33mcommit 1d24b5d1bb4b23d19a6a48de17050340dce33f47[m
+Merge: 273de1c c0e026f
+Author: ehof16 <ehof@sandhills.com>
+Date:   Mon Dec 11 08:42:31 2023 -0700
+
+    Merge branch 'main' of https://github.com/theehofman/react
+
+[33mcommit c0e026fda763583e6635639d552306f1781eab1b[m[33m ([m[1;31mreact/main[m[33m)[m
+Author: ehof17 <ehof17@gmail.com>
+Date:   Sat Dec 9 20:56:33 2023 -0700
+
+    Keeping score and changed gui
+
+[33mcommit 273de1c635c3b4ea132e103470546e5200fad446[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Fri Dec 8 17:02:18 2023 -0700
+
+    hold on
+
+[33mcommit c5bf2f9d230c2eb8e3ae622261a57a76cb7e8fc2[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Fri Dec 8 16:52:34 2023 -0700
+
+    refactored the layout
+
+[33mcommit a8ef22a052fdf9990c19f25fba4b0064f67df6f3[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Fri Dec 8 14:30:08 2023 -0700
+
+    Portals and reversal food works
+
+[33mcommit e67412ba8257c131569ae6dcb7fbd350a3c1ff0d[m
+Author: ehof17 <97199723+ehof17@users.noreply.github.com>
+Date:   Thu Dec 7 17:27:20 2023 -0700
+
+    Update README.md
+
+[33mcommit 16c849c48cbb3739dca5b69728432850fe16f9b5[m
+Author: ehof17 <97199723+ehof17@users.noreply.github.com>
+Date:   Thu Dec 7 17:23:25 2023 -0700
+
+    Create README.md
+
+[33mcommit 1d4c3fdd7330bfa63ba5feb677b406c751a1140b[m[33m ([m[1;31mreact/megafail[m[33m, [m[1;32mmegafail[m[33m)[m
+Author: ehof17 <ehof17@gmail.com>
+Date:   Wed Dec 6 21:06:34 2023 -0700
+
+    cleaned up and added start button
+
+[33mcommit c0db8c2c364bea048d8d96ea347069178398c6d5[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Wed Dec 6 16:56:30 2023 -0700
+
+    monkey brain put  setinterval into the connection
+
+[33mcommit 92f386acdee3988f253b4d67ce9aa1193b8eb543[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Wed Dec 6 16:50:24 2023 -0700
+
+    cleaning up
+
+[33mcommit 8dad8779315540ff0fd14d0841d643e2e449303f[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Wed Dec 6 16:40:33 2023 -0700
+
+    can connect multiple players, game speeds up tho
+
+[33mcommit 75679334efdec3b9c59a3946ab3b55b0b370eb54[m
+Author: ehof17 <ehof17@gmail.com>
+Date:   Wed Dec 6 11:19:18 2023 -0700
+
+    refactor use states
+
+[33mcommit 7d8c717c50d0d3a54d9b2d67083c80f402fd6508[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Fri Dec 1 16:59:00 2023 -0700
+
+    this sucks
+
+[33mcommit a1d404c1355bf482bf1851c6012ae5debed8ee70[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Wed Nov 29 17:00:45 2023 -0700
+
+    testing socket with snake game
+
+[33mcommit 3f0201d7b5b95f39f79e5bb959c3071dd007a2cd[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Wed Nov 29 16:22:25 2023 -0700
+
+    testing express app and deployed snake
+
+[33mcommit f3403a9fe578da965dd8d42300dda0f2b2166a29[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Wed Nov 29 14:40:40 2023 -0700
+
+    added portals to snake
+
+[33mcommit 5f4bf904c71393b258c1e3561f325464f1966111[m
+Author: ehof16 <ehof@sandhills.com>
+Date:   Mon Nov 27 17:05:11 2023 -0700
+
+    react projects at work

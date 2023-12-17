@@ -4,17 +4,14 @@
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
     gap: 1rem;
-    
- 
-    
-    
+     
     background-color: transparent;
     border-radius: 20px;
     border:1px solid rgba(255, 255, 255, 0.18);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     margin:1rem;
     padding: 1rem;
-    
+    text-align: center;
     z-index: 9;
 }
 
