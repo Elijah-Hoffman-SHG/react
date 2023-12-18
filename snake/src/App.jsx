@@ -9,7 +9,9 @@ import './App.css'
 import './Board.css'
 import io from 'socket.io-client'
 import Leaderboard from './leaderboard.jsx';
-const socket = io('http://23.239.5.150:3000');
+import LoadingScreen from './LoadingScreen.jsx';
+
+const socket = io('http://localhost:3000/');
 
 class Snake{
   constructor(list, cells, color, direction, portalStatus, score){
@@ -57,7 +59,7 @@ gameboard, snakeCells, foodCell, teleportationCell, foodShouldReverseDirection, 
 
 const BOARD_SIZE = 15;
 const App = () => {
-  const [gameStatus, setGameStatus] = useState("titleScreen");
+  const [gameStatus, setGameStatus] = useState("hidden");
   const [score, setScore] = useState(0);
   const [gameboard, setBoard] = useState(createBoard(BOARD_SIZE));
   const [gamespeed, setGameSpeed] = useState(150)
@@ -74,6 +76,7 @@ const App = () => {
   const [color, setColor] = useState('#1C82BF');
   const [name, setName] = useState('Player');
   const [leaderboardlist, setLeaderboard] = useState([]); 
+
   
   let playerSnake;
   let playerID;
@@ -96,7 +99,7 @@ const App = () => {
     if(name){
     setName(name);
     }
-    setGameStatus("playing");
+    setGameStatus("visible");
     }
      };
    
@@ -179,7 +182,7 @@ const App = () => {
 socket.on('snake-death', (color) => {
     setTitle(deathMessages[randomIntFromInterval(0, deathMessages.length - 1)]);
     setScore(0);
-    setGameStatus('titleScreen');
+    setGameStatus('hidden');
 })
   
 
@@ -190,34 +193,95 @@ socket.on('snake-death', (color) => {
   });
   
   useEffect(() => {
-    const handleKeydown = (e) => {
-      const newDirection = getDirectionFromKey(e.key);
+    let touchStartX = null;
+    let touchStartY = null;
+  
+    const handleTouchStart = (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    };
+  
+    const handleTouchEnd = (e) => {
+      let newDirection;
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      const diffX = touchStartX - touchEndX;
+      const diffY = touchStartY - touchEndY;
+  
+      if (Math.abs(diffX) > Math.abs(diffY)) { // Most significant.
+        if (diffX > 0) { // Swiped left.
+          newDirection = Direction.LEFT;
+        } else { // Swiped right.
+          newDirection = Direction.RIGHT;
+        }
+      } else {
+        if (diffY > 0) { // Swiped up.
+          newDirection = Direction.UP;
+        } else { // Swiped down.
+          newDirection = Direction.DOWN;
+        }
+      }
       const OppositeDirection = getOppositeDirection(directionRef.current);
-
+  
       if (newDirection && newDirection !== OppositeDirection) {
         setDirection(newDirection);
         directionRef.current = newDirection;
         socket.emit('changeDirection', { id: playerID, direction: newDirection });
       }
     };
+    
   
-    // Attach the handleKeydown function to the keydown event
+    const handleKeydown = (e) => {
+      const newDirection = getDirectionFromKey(e.key);
+      const OppositeDirection = getOppositeDirection(directionRef.current);
+  
+      if (newDirection && newDirection !== OppositeDirection) {
+        setDirection(newDirection);
+        directionRef.current = newDirection;
+        socket.emit('changeDirection', { id: playerID, direction: newDirection });
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+    };
+  
+    // Attach the handlers to the events
     window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
   
-    // Clean up the event listener when the component unmounts
+    // Clean up the event listeners when the component unmounts
     return () => {
       window.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchmove', handleTouchMove);
     };
-  }, [playerID, socket, setDirection, directionRef]);// Remove direction from the dependency array
-   
+  }, [playerID, socket, setDirection, directionRef]);
+   if(isLoading){
+    return (
+    <div className='App'>
+    <LoadingScreen/>
+    </div>
+    )
+   }
+   else{
   return (
+   
     <>
+     
       <div className='App'>
+     
         <div className="game-container">
-        {gameStatus === "titleScreen" && <TitleScreen setGameStatus={setGameStatus} title={title} handleStart={handleStart} inputcolor={color} inputname={name} />}
+        
           <>
-            <div className = 'boardbox'>
+          
+           
             { <Leaderboard leaderboard={leaderboardlist}/>}
+              <div className='board-and-title'>
+              {gameStatus === "hidden" && <TitleScreen setGameStatus={setGameStatus} title={title} handleStart={handleStart} inputcolor={color} inputname={name} />}
               <div className="board">
                 <Board 
                 gameboard={gameboard} 
@@ -228,9 +292,12 @@ socket.on('snake-death', (color) => {
                 foodShouldTeleport={foodShouldTeleport}
                 />
               </div>
-              
-              {gameStatus === "playing" && <Dispbox color = {color} score = {score}/>}  
-            </div>
+              </div>
+              <div className='dispbox-container'>
+                {/*Make the thing not visible when its playing, but render it anyway*/}
+              {<Dispbox color = {color} score = {score} visib = {gameStatus}/>}  
+        
+              </div>
           </>
         </div>
        
@@ -238,6 +305,7 @@ socket.on('snake-death', (color) => {
     </>
   )
       
+}
 }
 const createBoard = BOARD_SIZE =>{
   let counter =1;

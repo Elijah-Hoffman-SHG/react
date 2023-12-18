@@ -21,12 +21,18 @@ function TitleScreen({ setGameStatus, title, handleStart, inputcolor, inputname 
   
   return (
     <div className="title-screen">
-      <h1>{title}</h1>
+      <div className="title">{title}</div>
       <BlockDescription color = {usingcolor}/>
+      <div className="select-box">
       <h2>Choose your color:</h2>
+      <div className="selection-box">
       <input type="color" value={usingcolor} onChange={handleColorChange} />
+      </div>
       <h2>Choose your name:</h2>
+      <div className="selection-box">
       <input type="text" value={name || "player"} onChange={handleNameChange} />
+      </div>
+      </div>
       <button className="btn-pink button-23" onClick={handleStartClick}>Play</button>
     </div>
   )

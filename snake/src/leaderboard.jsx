@@ -1,3 +1,4 @@
+import React from 'react';
 export default function Leaderboard({leaderboard}) {
     return (
         <div className="nav">
@@ -9,11 +10,11 @@ export default function Leaderboard({leaderboard}) {
                 <div>Score</div>
                 <>
                     {Object.keys(leaderboard).map((id, index) => (
-                        <>
+                        <React.Fragment key = {id}>
                         <div>{index + 1}</div>
                         <div>{leaderboard[id].name}</div>
                         <div>{leaderboard[id].score}</div>
-                        </>
+                        </React.Fragment>
                     ))}
                 </>
             

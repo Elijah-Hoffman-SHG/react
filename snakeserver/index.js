@@ -3,13 +3,30 @@ const app = express()
 
 // socket.io setup
 const http = require('http')
+
+//for local testing
+const cors = require('cors');
+app.use(cors());
+//
 const server = http.createServer(app)
 const { Server } = require('socket.io')
-const io = new Server(server, { pingInterval: 2000, pingTimeout: 5000 })
+
+//public
+//const io = new Server(server, { pingInterval: 2000, pingTimeout: 5000 })
+//local
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3001",
+    
+    methods: ["GET", "POST"],
+  },
+  pingInterval: 2000,
+  pingTimeout: 5000
+});
 
 
-const path = require('path');
-app.use(express.static(path.join(__dirname, '../snake/dist/')));
+//const path = require('path');
+//app.use(express.static(path.join(__dirname, '../snake/dist/')));
 
 
 
@@ -88,7 +105,7 @@ const board = createBoard(BOARD_SIZE)
 
 // Handle new connections
 io.on("connection", (socket) => {
-    
+    console.log(snakes)
     // Initialize new snake for the connected client
     let startingPosition = getStartingSnakeLLValue(board);
     let startingCell = Array.from(startingPosition.cell);

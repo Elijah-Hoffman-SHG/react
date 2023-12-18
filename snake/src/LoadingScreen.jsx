@@ -2,11 +2,11 @@
 import './LoadingScreen.css';
 function LoadingScreen (props) {
   return (
-    <div class = "loading">
+    <div className= "loading">
     <h1>
     Loading...
     </h1>
-<div class="loadingspinner">
+<div className="loadingspinner">
   
   <div id="square1"></div>
   <div id="square2"></div>

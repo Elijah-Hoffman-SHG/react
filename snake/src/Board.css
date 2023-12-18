@@ -1,24 +1,29 @@
 .game-container{
-    position:relative;
-    width: 100%;
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
+    
+    justify-content: center;
+    align-items: center;
+    
 }
 .board{
-    outline: 2px solid lightblue;
     user-select: none;
     color: #282c34;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 0;
+    position: relative;
+    margin:auto;
+   
+   }
+.board-and-title{
+    position: relative;
+   
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    max-height: 800px;
 }
-h4{
-    color: pink;
-}
+
 .nav{
-    margin: 1rem;
+   
 }
 .row{
     color: white;
@@ -52,14 +57,7 @@ h4{
 .cell-yellow{
     background-color: rgb(105, 185, 0);
 }
-.boardbox{
-    display: flex;
-    flex-direction: row-reverse;
-    
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-}
+
 .flex{
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -75,10 +73,17 @@ h4{
     z-index: 9;
 }
 .title-screen{
-    
-        position: absolute;
+    font-size: 2.4rem;
         text-align: center;
+        position: absolute;
         
+       
+        width: 50%;
+        top: 50%;
+        left: 25%;
+        width: 50%;
+        transform: translateY(-50%);
+    
 
         border-radius: 20px;
         border:1px solid rgba(255, 255, 255, 0.18);
@@ -86,28 +91,55 @@ h4{
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        font-size: calc(10px+2vmin);
+        font-size: 2rem;
         color:white;
         box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
         border-radius: 37px;
         z-index: 1;
 }
-.title-screen h1{
-    font-size: 3rem;
-    font-weight: 600;
-    color: white;
-  
-    margin-bottom: 0;
-    backdrop-filter: none;
-   
-    background: none;
+@media screen and (max-width: 900px) {
+    .title-screen{
+       font-size: 1rem;
+        padding: 1rem;
+        width: auto; /* Default value */
+        top: auto; /* Default value */
+        left: auto; /* Default value */
+        transform: none; 
+    }
+    .title-screen h1{
+        font-size: 1rem;
+    }
+    .box{
+        visibility: hidden;
+    }
+    .nav{
+        display: none;
+    }
+    .row{
+        height: 20px;
+
+    }
+    .cell{
+        width:  20px;
+        height: 20px;
+    }
+    .button-23{
+       
+       padding: .4rem;
+        margin-top: .2rem;
+        line-height: normal;
+    }
+    .select-box{
+        font-size: .5rem;
+        display: block;
+        
+    }
+    
 }
 
 .button-23 {
