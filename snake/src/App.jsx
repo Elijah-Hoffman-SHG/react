@@ -11,8 +11,8 @@ import io from 'socket.io-client'
 import Leaderboard from './leaderboard.jsx';
 import LoadingScreen from './LoadingScreen.jsx';
 
-const socket = io('http://localhost:3000/');
-
+//const socket = io('http://localhost:3000/');
+const socket = io('http://23.239.5.150:3000');
 class Snake{
   constructor(list, cells, color, direction, portalStatus, score){
     this.list = list;

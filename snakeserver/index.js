@@ -12,21 +12,21 @@ const server = http.createServer(app)
 const { Server } = require('socket.io')
 
 //public
-//const io = new Server(server, { pingInterval: 2000, pingTimeout: 5000 })
+const io = new Server(server, { pingInterval: 2000, pingTimeout: 5000 })
 //local
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3001",
-    
-    methods: ["GET", "POST"],
-  },
-  pingInterval: 2000,
-  pingTimeout: 5000
-});
+//const io = new Server(server, {
+  //cors: {
+ // //  origin: "http://localhost:3001",
+ //   
+//    methods: ["GET", "POST"],
+ // },
+ // pingInterval: 2000,
+ // pingTimeout: 5000
+//}//);
 
 
-//const path = require('path');
-//app.use(express.static(path.join(__dirname, '../snake/dist/')));
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../snake/dist/')));
 
 
 
